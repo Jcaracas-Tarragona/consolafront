@@ -14,6 +14,7 @@ import LoginForm from "./components/LoginForm";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import DashMenu from "./components/pages/DashMenu";
 import Articulos from "./components/articles/ArticlesPage";
+import Vendedores from "./components/rrhh/Vendedores";
 import ProtectedByRole from "./components/ProtectedByRole";
 import { useAuthGuard } from "./hooks/useAuthGuard";
 
@@ -25,7 +26,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 function Layout({ token, user }) {
   const location = useLocation();
 
-  const MANAGEMENT_ROUTES = ["/admin", "/menu-locales"];
+  const MANAGEMENT_ROUTES = ["/admin", "/menu-locales","/vendedores"];
 
   const isManagementView = MANAGEMENT_ROUTES.some((path) =>
     location.pathname.startsWith(path)
@@ -72,6 +73,15 @@ function Layout({ token, user }) {
           element={
             <ProtectedByRole user={user} roles={["Admin", "Comercial"]}>
               <Articulos token={token} />
+            </ProtectedByRole>
+          }
+        />
+
+        <Route
+          path="/vendedores"
+          element={
+            <ProtectedByRole user={user} roles={["Admin", "RRHH"]}>
+              <Vendedores token={token} />
             </ProtectedByRole>
           }
         />

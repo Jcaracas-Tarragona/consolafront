@@ -16,6 +16,8 @@ function MyNavbar({ user, onLogout, token }) {
     navigate("/");
   };
 
+
+
   const cargarNotificaciones = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/notificaciones`, {
@@ -42,13 +44,16 @@ function MyNavbar({ user, onLogout, token }) {
   };
 
   useEffect(() => {
+    if (role !== "Admin") return;
     cargarNotificaciones();
 
-    // 🔥 refresco cada 60 seg (opcional pero recomendado)
-    const interval = setInterval(cargarNotificaciones, 500000);
+    const interval = setInterval(() => {
+      cargarNotificaciones();
+    }, 500000);
 
     return () => clearInterval(interval);
-  }, []);
+
+  }, [role]);
 
   const marcarYRedirigir = async (notif) => {
     try {
@@ -103,7 +108,7 @@ function MyNavbar({ user, onLogout, token }) {
         <Navbar.Collapse id="navbarNav">
           <Nav className="me-auto">
 
-            {role !== "Comercial" && role !== "Zonal" && (
+            {role !== "Comercial" && role !== "Zonal" && role !== "RRHH" && (
               <Nav.Link onClick={() => {navigate("/"); setExpanded(false); }}>
                 Panel de Gestión
               </Nav.Link>
@@ -118,6 +123,11 @@ function MyNavbar({ user, onLogout, token }) {
             {(role === "Admin" || role === "Comercial" || role === "Zonal") && (
               <Nav.Link onClick={() => {navigate("/menu-locales"); setExpanded(false); }}>
                 Menú Local
+              </Nav.Link>
+            )}
+            {(role === "Admin" || role === "RRHH") && (
+              <Nav.Link onClick={() => {navigate("/vendedores"); setExpanded(false); }}>
+                Ingreso Vendedores
               </Nav.Link>
             )}
 
