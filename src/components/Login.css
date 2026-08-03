@@ -1,0 +1,365 @@
+/*==========================================================
+    LOGIN TARRAGONA
+==========================================================*/
+
+:root{
+
+    --tg-red:#E40046;
+    --tg-red-hover:#ff1f63;
+
+    --text:#FFFFFF;
+    --text2:#CFCFCF;
+
+}
+
+/*==========================================================
+    RESET
+==========================================================*/
+
+html,
+body,
+#root{
+
+    width:100%;
+    height:100%;
+    margin:0;
+
+    font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+
+}
+
+/*==========================================================
+    FONDO
+==========================================================*/
+
+.login-page{
+
+    width:100%;
+    min-height:100vh;
+
+    background-image:url("../../public/login-bg.webp");
+
+    background-size:cover;
+
+    background-position:center;
+
+    background-repeat:no-repeat;
+
+    overflow:hidden;
+
+    position:relative;
+
+}
+
+/* oscurece muy levemente la imagen */
+
+.login-page::before{
+
+    content:"";
+
+    position:absolute;
+
+    inset:0;
+
+    background:linear-gradient(
+        90deg,
+        rgba(0,0,0,.38),
+        rgba(0,0,0,.45),
+        rgba(0,0,0,.65)
+    );
+
+}
+
+/*==========================================================
+    CONTENEDOR DEL FORMULARIO
+==========================================================*/
+
+.login-overlay{
+
+    position:relative;
+
+    z-index:5;
+
+    min-height:100vh;
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    align-items:center;
+
+    padding-right:7%;
+
+    padding-left:30px;
+
+}
+
+/*==========================================================
+    TARJETA
+==========================================================*/
+
+.login-card{
+
+    width:100%;
+
+    max-width:430px;
+
+    padding:45px;
+
+    border-radius:28px;
+
+    background:rgba(20,20,20,.52);
+
+    backdrop-filter:blur(18px);
+
+    border:1px solid rgba(255,255,255,.10);
+
+    box-shadow:
+
+        0 30px 70px rgba(0,0,0,.45),
+
+        inset 0 1px 0 rgba(255,255,255,.08);
+
+    animation:fadeUp .8s ease;
+
+}
+
+/*==========================================================
+    LOGO
+==========================================================*/
+
+.login-logo{
+
+    width:220px;
+
+    margin:auto;
+
+    display:block;
+
+    margin-bottom:25px;
+
+}
+
+/*==========================================================
+    TITULOS
+==========================================================*/
+
+.login-title{
+
+    color:white;
+
+    text-align:center;
+
+    font-size:2rem;
+
+    font-weight:700;
+
+    margin-bottom:8px;
+
+}
+
+.login-subtitle{
+
+    color:var(--text2);
+
+    text-align:center;
+
+    margin-bottom:35px;
+
+    font-size:.95rem;
+
+}
+
+/*==========================================================
+    INPUTS
+==========================================================*/
+
+.login-input{
+
+    background:rgba(255,255,255,.05)!important;
+
+    border:1px solid rgba(255,255,255,.08)!important;
+
+    color:white!important;
+
+    height:58px;
+
+    border-radius:12px;
+
+}
+
+.login-input::placeholder{
+
+    color:#999;
+
+}
+
+.login-input:focus{
+
+    background:rgba(255,255,255,.08)!important;
+
+    color:white;
+
+    border-color:var(--tg-red)!important;
+
+    box-shadow:
+
+        0 0 0 .20rem rgba(228,0,70,.25);
+
+}
+
+.form-floating>label{
+
+    color:#C7C7C7;
+
+}
+
+.form-floating>.form-control:focus~label{
+
+    color:white;
+
+}
+
+/*==========================================================
+    BOTON
+==========================================================*/
+
+.login-btn{
+
+    height:54px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:var(--tg-red);
+
+    color:white;
+
+    font-weight:600;
+
+    font-size:1rem;
+
+    transition:.25s;
+
+}
+
+.login-btn:hover{
+
+    background:var(--tg-red-hover);
+
+    transform:translateY(-2px);
+
+    box-shadow:
+
+        0 12px 25px rgba(228,0,70,.35);
+
+}
+
+.login-btn:active{
+
+    transform:scale(.98);
+
+}
+
+/*==========================================================
+    ALERTA
+==========================================================*/
+
+.alert{
+
+    border-radius:12px;
+
+}
+
+/*==========================================================
+    ANIMACION
+==========================================================*/
+
+@keyframes fadeUp{
+
+    from{
+
+        opacity:0;
+
+        transform:
+
+            translateY(25px)
+
+            scale(.96);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:
+
+            translateY(0)
+
+            scale(1);
+
+    }
+
+}
+
+/*==========================================================
+    RESPONSIVE
+==========================================================*/
+
+@media(max-width:992px){
+
+    .login-page{
+
+        background-position:left center;
+
+    }
+
+    .login-overlay{
+
+        justify-content:center;
+
+        padding:30px;
+
+    }
+
+    .login-card{
+
+        max-width:460px;
+
+        background:rgba(20,20,20,.70);
+
+    }
+
+}
+
+@media(max-width:576px){
+
+    .login-overlay{
+
+        padding:20px;
+
+    }
+
+    .login-card{
+
+        padding:28px;
+
+        border-radius:22px;
+
+    }
+
+    .login-logo{
+
+        width:170px;
+
+    }
+
+    .login-title{
+
+        font-size:1.6rem;
+
+    }
+
+}

@@ -1,89 +1,211 @@
 // src/components/LoginForm.jsx
+
 import React, { useState } from "react";
-import { API_BASE_URL } from "../config"; 
+import { API_BASE_URL } from "../config";
+import "./Login.css";
 
 function LoginForm({ onLogin }) {
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
+
     e.preventDefault();
+
     setError("");
     setLoading(true);
 
     try {
-      // 🔹 Aquí deberías poner la URL real de tu backend de login
+
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
+
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          username,
+          password
+        })
+
       });
 
-      if (!res.ok) throw new Error("Credenciales incorrectas");
+      if (!res.ok)
+        throw new Error();
 
       const data = await res.json();
-      
-      
-      // 🔹 Guarda token y usuario en localStorage
+
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("authUser", data.user);
-      
-      
 
-      
-
-      // 🔹 Llama al callback del App.jsx
       onLogin(data.token, data.user);
-    } catch (err) {
-      setError("❌ Usuario o contraseña inválidos");
+
+    } catch {
+
+      setError("Usuario o contraseña incorrectos.");
+
     } finally {
+
       setLoading(false);
+
     }
+
   };
 
   return (
-    <div className="container mt-5 text-center">
-      <div className="card shadow-sm p-4 mx-auto" style={{ maxWidth: 380 }}>
-        <h4 className="mb-3">Iniciar sesión</h4>
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3 text-start">
-            <label className="form-label fw-bold">Usuario</label>
-            <input
-              type="text"
-              className="form-control"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
+    <div className="login-page">
 
-          <div className="mb-3 text-start">
-            <label className="form-label fw-bold">Contraseña</label>
-            <input
-              type="password"
-              className="form-control"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
+      <div className="login-overlay">
 
-          {error && <div className="alert alert-danger py-2">{error}</div>}
+        <div className="login-card">
 
-          <button
-            type="submit"
-            className="btn btn-primary w-100"
-            disabled={loading}
-          >
-            {loading ? "Ingresando..." : "Entrar"}
-          </button>
-        </form>
+          <h2 className="login-title">
+
+            Bienvenido
+
+          </h2>
+
+          <p className="login-subtitle">
+
+            Ingrese sus credenciales para acceder al sistema
+
+          </p>
+
+          <form onSubmit={handleSubmit}>
+
+            <div className="form-floating mb-3">
+
+              <input
+
+                id="username"
+
+                type="text"
+
+                className="form-control login-input"
+
+                placeholder="Usuario"
+
+                autoComplete="username"
+
+                value={username}
+
+                onChange={(e) =>
+                  setUsername(e.target.value)
+                }
+
+                required
+
+              />
+
+              <label htmlFor="username">
+
+                <i className="bi bi-person-fill me-2"></i>
+
+                Usuario
+
+              </label>
+
+            </div>
+
+            <div className="form-floating mb-4">
+
+              <input
+
+                id="password"
+
+                type="password"
+
+                className="form-control login-input"
+
+                placeholder="Contraseña"
+
+                autoComplete="current-password"
+
+                value={password}
+
+                onChange={(e) =>
+                  setPassword(e.target.value)
+                }
+
+                required
+
+              />
+
+              <label htmlFor="password">
+
+                <i className="bi bi-lock-fill me-2"></i>
+
+                Contraseña
+
+              </label>
+
+            </div>
+
+            {error && (
+
+              <div className="alert alert-danger py-2">
+
+                <i className="bi bi-exclamation-circle-fill me-2"></i>
+
+                {error}
+
+              </div>
+
+            )}
+
+            <button
+
+              type="submit"
+
+              className="btn login-btn w-100"
+
+              disabled={loading}
+
+            >
+
+              {loading ? (
+
+                <>
+
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                  />
+
+                  Ingresando...
+
+                </>
+
+              ) : (
+
+                <>
+
+                  <i className="bi bi-box-arrow-in-right me-2"></i>
+
+                  Ingresar
+
+                </>
+
+              )}
+
+            </button>
+
+          </form>
+
+        </div>
+
       </div>
+
     </div>
+
   );
+
 }
 
 export default LoginForm;
