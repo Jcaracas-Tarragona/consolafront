@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import { API_BASE_URL } from "../../config";
 import MobileActions from "../utils/MobileActions";
 import ConnectionDetalleModal from "./ConnectionDetalleModal";
+import Select from "react-select";
 import * as XLSX from "xlsx";
+import { logout } from "../utils/logout";
 
 function ConnectionsAdmin({ token }) {
   const emptyForm = {
@@ -18,7 +20,8 @@ function ConnectionsAdmin({ token }) {
     c_llamador: "",
     activo: true,
     rut: "",
-    razon_social: ""
+    razon_social: "",
+    empresa_id: null
   };
 
   const [data, setData] = useState([]);
@@ -27,6 +30,9 @@ function ConnectionsAdmin({ token }) {
   const [search, setSearch] = useState("");
   const [showDetalle, setShowDetalle] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
+  const [empresas, setEmpresas] = useState([]);
+  const [sessionExpired, setSessionExpired] = useState(false);
+    
   
   // 🔥 OPCIONES EMPRESA
   const empresasOptions = [
@@ -39,6 +45,7 @@ function ConnectionsAdmin({ token }) {
 
   const [filtros, setFiltros] = useState({
     texto: "",
+    empresa: "",
     razonSocial: "",
     kiosko: "",
     kds: "",
@@ -60,6 +67,14 @@ function ConnectionsAdmin({ token }) {
         { headers }
       );
 
+      // Sesión expirada
+      if (res.status === 401) {
+          setSessionExpired(true);
+          alert("Su sesión ha expirado. Debe volver a iniciar sesión.");
+          logout();
+          return;
+      }
+
       const json = await res.json();
       
       setData(json);
@@ -70,31 +85,78 @@ function ConnectionsAdmin({ token }) {
     setLoading(false);
   };
 
+  // 🔹 Cargar Empresa
+  async function cargarEmpresas() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/empresas`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      // Sesión expirada
+      if (res.status === 401) {
+
+        alert("Su sesión ha expirado. Debe volver a iniciar sesión.");
+
+        localStorage.clear();
+
+        window.location.href = "/login";
+
+        return;
+      }
+
+      const data = await res.json();
+      setEmpresas(Array.isArray(data) ? data : []);
+
+    } catch {
+      setEmpresas([]);
+    }
+  }
+
   useEffect(() => {
+    cargarEmpresas();
     cargar();
   }, []);
 
   const guardar = async () => {
+    if (!form.empresa_id ) {
+      alert("Debe seleccionar una empresa.");
+      return;
+    }
     try {
       const method = form.id ? "PUT" : "POST";
       const url = form.id
         ? `${API_BASE_URL}/connections/${form.id}`
         : `${API_BASE_URL}/connections`;
 
-      await fetch(url, {
+      const res = await fetch(url, {
         method,
         headers,
         body: JSON.stringify(form)
       });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Error al guardar el local.");
+      }
+
+      alert(
+        form.id
+          ? "✅ Local actualizado correctamente."
+          : "✅ Local creado correctamente."
+      );
 
       setForm(emptyForm);
       cargar();
     } catch (err) {
       console.error(err);
+      alert(`❌ ${err.message}`);
     }
   };
 
-  const editar = (row) => setForm(row);
+  const editar = (row) => {
+    setForm(row);
+  };
 
   const eliminar = async (id) => {
     if (!window.confirm("¿Eliminar registro?")) return;
@@ -144,6 +206,10 @@ function ConnectionsAdmin({ token }) {
           filtros.texto
         );
 
+      const cumpleEmpresa =
+        filtros.empresa === "" ||
+        Number(item.empresa_id) === Number(filtros.empresa);
+
       const cumpleRazonSocial =
         !filtros.razonSocial ||
 
@@ -169,6 +235,7 @@ function ConnectionsAdmin({ token }) {
 
       return (
         cumpleTexto &&
+        cumpleEmpresa &&
         cumpleRazonSocial &&
         cumpleKiosko &&
         cumpleKds &&
@@ -214,6 +281,10 @@ function ConnectionsAdmin({ token }) {
       );
     };
 
+  if (sessionExpired) {
+    return null;
+  }
+
   return (
     <div className="card shadow-sm">
       <div className="card-header d-flex justify-content-between align-items-center">
@@ -235,18 +306,32 @@ function ConnectionsAdmin({ token }) {
               />
             </div>
 
-            <div className="col-md-3">
-              <select
-                className="form-select"
-                value={filtros.razonSocial}
+            <div className="col-md-2">
+              <select className="form-select" value={filtros.empresa}
+                onChange={(e) =>
+                  setFiltros(prev => ({
+                    ...prev,
+                    empresa: e.target.value
+                  }))
+                } >
+                <option value="">Empresa</option>
+                {empresas.map(emp => (
+                  <option key={emp.id} value={emp.id} >
+                    {emp.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="col-md-2">
+              <select className="form-select" value={filtros.razonSocial}
                 onChange={(e) =>
                   setFiltros(prev => ({
                     ...prev,
                     razonSocial: e.target.value
                   }))
-                }
-              >
-                <option value="">Empresa</option>
+                } >
+                <option value="">Rut</option>
 
                 {[...new Set(data.map(x => x.razon_social))]
                   .filter(Boolean)
@@ -260,16 +345,13 @@ function ConnectionsAdmin({ token }) {
             </div>
 
             <div className="col-md-2">
-              <select
-                className="form-select"
-                value={filtros.kiosko}
+              <select className="form-select" value={filtros.kiosko}
                 onChange={(e) =>
                   setFiltros(prev => ({
                     ...prev,
                     kiosko: e.target.value
                   }))
-                }
-              >
+                } >
                 <option value="">Kiosko</option>
                 <option value="true">Sí</option>
                 <option value="false">No</option>
@@ -277,16 +359,13 @@ function ConnectionsAdmin({ token }) {
             </div>
 
             <div className="col-md-2">
-              <select
-                className="form-select"
-                value={filtros.kds}
+              <select className="form-select" value={filtros.kds}
                 onChange={(e) =>
                   setFiltros(prev => ({
                     ...prev,
                     kds: e.target.value
                   }))
-                }
-              >
+                } >
                 <option value="">KDS</option>
                 <option value="true">Sí</option>
                 <option value="false">No</option>
@@ -295,9 +374,10 @@ function ConnectionsAdmin({ token }) {
 
           </div>
 
-          <button className="btn btn-outline-secondary" onClick={() =>
+          <button className="btn btn-outline-secondary mx-1" onClick={() =>
               setFiltros({
                 texto: "",
+                empresa: "",
                 razonSocial: "",
                 kiosko: "",
                 kds: "",
@@ -336,7 +416,7 @@ function ConnectionsAdmin({ token }) {
                 }));
               }}
             >
-              <option value=""> Seleccione Empresa </option>
+              <option value=""> Seleccione Rut </option>
               {empresasOptions.map((empresa, index) => (
                 <option key={index} value={`${empresa.rut}|${empresa.razon_social}`} >
 
@@ -360,16 +440,57 @@ function ConnectionsAdmin({ token }) {
               checked={form.llamador} onChange={onChange} /> Llamador</label>
             <input className="form-control" name="c_llamador" title="IP del Llamador, solo ultimo octeto" placeholder="IP."
               value={form.c_llamador} onChange={onChange} disabled={!form.llamador} />
+            
           </div>
 
           
 
-          <div className="col-md-3 d-flex gap-2 justify-content-end m-auto">
-            <button className="btn btn-success w-100" onClick={guardar}>
+          <div className="col-md-6 d-flex gap-2 justify-content-end m-auto">
+            <Select
+              className="flex-grow-1"
+
+              placeholder="Seleccionar Empresa"
+
+              isClearable
+
+              value={
+                  empresas
+                      .map(emp => ({
+                          value: emp.id,
+                          label: emp.nombre
+                      }))
+                      .find(opt => opt.value === form.empresa_id) || null
+              }
+
+              options={empresas.map(emp => ({
+                  value: emp.id,
+                  label: emp.nombre
+              }))}
+
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+
+              styles={{
+                  menuPortal: base => ({
+                      ...base,
+                      zIndex: 9999
+                  })
+              }}
+
+              onChange={(opt) => {
+
+                  setForm(prev => ({
+                      ...prev,
+                      empresa_id: opt ? opt.value : null
+                  }));
+
+              }}
+          />
+            <button className="btn btn-success w-25" onClick={guardar}>
               {form.id ? "Actualizar" : "Crear"}
             </button>
 
-            <button className="btn btn-secondary w-100"
+            <button className="btn btn-secondary w-25"
               onClick={() => setForm(emptyForm)}>
               Limpiar
             </button>

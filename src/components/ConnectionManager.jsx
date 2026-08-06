@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { API_BASE_URL } from "../config"; 
 import { apiFetch } from "./utils/api";
 import Select from "react-select";
@@ -11,38 +11,59 @@ function ConnectionManager({ token }) {
   const [connectedId, setConnectedId] = useState(localStorage.getItem("connectedConnectionId") || "");
   // 🧩 Formulario de nueva conexión / edición
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: "", host: "", codLocal: "" });
-
+  const [empresas, setEmpresas] = useState([]);
+  const [empresaSeleccionada, setEmpresaSeleccionada] = useState(2);
+  const [form, setForm] = useState({ empresa_id: 2, name: "", host: "", codLocal: "" });
+  
   const user = JSON.parse(localStorage.getItem("authUser") || "{}");
   const isAdmin = user.role === "Admin" || user.role === "N2";
   
 
-  // 🔹 Cargar lista
-    // ✅ Definir fetchConnections con useCallback
-    const fetchConnections = useCallback(async () => {
-      try {
-        const data = await apiFetch("/connections");
-    
-        // ordenar por codLocal si existe
-        const sorted = [...data].sort((a, b) => {
-          if (a.codLocal && b.codLocal) {
-            if (!isNaN(a.codLocal) && !isNaN(b.codLocal)) return Number(a.codLocal) - Number(b.codLocal);
-            return String(a.codLocal).localeCompare(String(b.codLocal));
-          }
-          return a.id - b.id;
-        });
-    
-        setConnections(sorted);
-    
-      } catch (err) {
-        setMessage("❌ No se pudieron cargar las conexiones");
+  // 🔹 Cargar Empresa
+  async function cargarEmpresas() {
+    const res = await fetch(`${API_BASE_URL}/empresas`, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-    }, []);
+    });
+    const data = await res.json();
+    setEmpresas(data);
+  }
+
+  // ✅ Definir fetchConnections con useCallback
+  const fetchConnections = useCallback(async () => {
+    try {
+      const data = await apiFetch("/connections");
+  
+      // ordenar por codLocal si existe
+      const sorted = [...data].sort((a, b) => {
+        if (a.codLocal && b.codLocal) {
+          if (!isNaN(a.codLocal) && !isNaN(b.codLocal)) return Number(a.codLocal) - Number(b.codLocal);
+          return String(a.codLocal).localeCompare(String(b.codLocal));
+        }
+        return a.id - b.id;
+      });
+      setConnections(sorted);
+  
+    } catch (err) {
+      setMessage("❌ No se pudieron cargar las conexiones");
+    }
+  }, []);
+
+  const filteredConnections = useMemo(() => {
+      return connections.filter(c =>
+          Number(c.empresa_id) === Number(empresaSeleccionada)
+      );
+  }, [connections, empresaSeleccionada]);
 
   // ✅ useEffect solo depende de fetchConnections
   useEffect(() => {
+    cargarEmpresas();
+    console.log(empresaSeleccionada);
+    
     fetchConnections();
   }, [fetchConnections]);
+  
 
   // 🔹 Probar conexión
   const handleTestConnection = async (id) => {
@@ -196,16 +217,37 @@ function ConnectionManager({ token }) {
       <h4 className="mb-3">Gestión de Conexiones</h4>
 
       <div className="d-flex gap-4 align-items-center">
-        <label className="form-label fw-bold">Seleccionar Conexión:</label>
+        <label className="form-label fw-bold">Empresa:</label>
+          <Select className="flex-grow-1 w-25"
+            value={
+                empresas
+                    .map(emp => ({
+                        value: emp.id,
+                        label: emp.nombre
+                    }))
+                    .find(opt => opt.value === empresaSeleccionada)
+            }
+            options={empresas.map(emp => ({
+                value: emp.id,
+                label: emp.nombre
+            }))}
+            onChange={(opt) => {
+                setEmpresaSeleccionada(opt.value);
+                setForm(prev => ({
+                    ...prev,
+                    empresa_id: opt.value
+                }));
+                setSelected("");
+            }}
+          />
 
-          <Select
-            className="flex-grow-1"
-            options={connections.map(c => ({
+          <Select className="flex-grow-1 w-75"
+            options={filteredConnections.map(c => ({
               value: c.id,
               label: `${c.codLocal ? `${c.codLocal} — ` : ""}${c.name} (${c.host})`
             }))}
-            placeholder="Selecciona o escribe para buscar..."
-            value={connections
+            placeholder="Selecciona local o escribe para buscar..."
+            value={filteredConnections
               .map(c => ({
                 value: c.id,
                 label: `${c.codLocal ? `${c.codLocal} — ` : ""}${c.name} (${c.host})`
