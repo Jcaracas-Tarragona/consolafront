@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import HorarioBaseFormModal from "./HorarioBaseFormModal";
 import HorarioEspecialModal from "./HorarioEspecialModal";
-import ZendeskTicketsView from "./ZendeskTicketsView";
 import Pagination from "../common/Pagination";
 import { API_BASE_URL } from "../../config";
 import MobileActions from "../utils/MobileActions";
@@ -15,10 +14,6 @@ export default function HorariosBasePage({ token }) {
   const [showEspecialModal, setShowEspecialModal] = useState(false);
   const [horarioEspecial, setHorarioEspecial] = useState(null);
   const [searchLocal, setSearchLocal] = useState("");
-  const [tickets, setTickets] = useState([]);
-  const [showTicketsModal, setShowTicketsModal] = useState(false);
-  
-  const formatHora = (hora) => hora?.slice(0, 5);
 
   const limit = 10;
 
@@ -162,7 +157,7 @@ export default function HorariosBasePage({ token }) {
                 </td>
 
                 <td className="text-center">
-                  <div className="d-none d-md-flex gap-2">
+                  <div className="d-none d-md-flex gap-2 justify-content-center ">
                     <button className="btn btn-sm btn-outline-primary" title="Reemplazar Horario" onClick={() => {
                         setEditingHorario({
                           codlocal: local.codlocal,
@@ -172,7 +167,7 @@ export default function HorariosBasePage({ token }) {
                       }}>🔁 
                     </button>
 
-                    <button className="btn btn-sm btn-outline-warning ms-2" title="Asignar Horario Especial"
+                    <button className="btn btn-sm btn-outline-warning " title="Asignar Horario Especial"
                       onClick={() => {
                         setHorarioEspecial({
                           codlocal: local.codlocal,
@@ -182,14 +177,7 @@ export default function HorariosBasePage({ token }) {
                       }}
                     > ⏰
                     </button>
-                    <button className="btn btn-sm btn-outline-secondary ms-2" title="Ver Tickets" onClick={() => {
-                        setTickets({
-                          codlocal: local.codlocal,
-                          local_nombre: local.local_nombre
-                        });
-                        setShowTicketsModal(true);
-                      }}>📊 
-                    </button>
+
                   </div>
                   {/* MOBILE */}
                   <MobileActions
@@ -214,17 +202,6 @@ export default function HorariosBasePage({ token }) {
                             local_nombre: local.local_nombre
                           });
                           setShowEspecialModal(true);
-                        }
-                      },
-                      {
-                        label: "Ver Tickets",
-                        icon: "📊",
-                        onClick: () => {
-                          setTickets({
-                            codlocal: local.codlocal,
-                            local_nombre: local.local_nombre
-                          });
-                          setShowTicketsModal(true);
                         }
                       }
                     ]}
@@ -262,14 +239,6 @@ export default function HorariosBasePage({ token }) {
           data={horarioEspecial}
           onClose={() => setShowEspecialModal(false)}
           onSaved={fetchHorarios}
-        />
-      )}
-
-      {showTicketsModal && (
-        <ZendeskTicketsView
-          token={token}
-          dataLocal={tickets}
-          onClose={() => setShowTicketsModal(false)}
         />
       )}
         

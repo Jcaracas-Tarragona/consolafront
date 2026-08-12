@@ -43,56 +43,84 @@ function VentasDistribuidasView({token}) {
               <th>Estado</th>
             </tr>
           </thead>
-
-          <tbody>
-            {data.map(l => (
-              <tr key={l.codLocal}>
-
-                {/* 🔹 LOCAL + CENTRAL EN MOBILE */}
-                <td>
-                  <div className="fw-semibold">{l.name}</div>
-
-                  {/* Mobile: mostrar central como secundario */}
-                  <div className="d-md-none text-muted small">
-                    Central: ${l.central.total.toLocaleString("es-CL")}
-                  </div>
+        <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="5" className="text-center text-muted py-4">
+                  
                 </td>
-
-                {/* 🔹 LOCAL */}
-                <td className="text-end">
-                  ${l.local.total.toLocaleString("es-CL")}
-                </td>
-
-                {/* 🔹 CENTRAL SOLO DESKTOP */}
-                <td className="text-end d-none d-md-table-cell">
-                  ${l.central.total.toLocaleString("es-CL")}
-                </td>
-
-                {/* 🔹 DIFERENCIA */}
-                <td className="text-end fw-bold">
-                  ${l.diferencia.total.toLocaleString("es-CL")}
-                </td>
-
-                {/* 🔹 ESTADO */}
-                <td>
-                  {l.diferencia.total === 0 ? (
-                    <span className="badge bg-success">OK</span>
-                  ) : (
-                    <span className="badge bg-danger">Diferencia</span>
-                  )}
-                </td>
-
               </tr>
-            ))}
-          </tbody>
+            ) : data.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="text-center text-muted py-4">
+                  <i className="bi bi-info-circle me-2"></i>
+                  Sin registro
+                </td>
+              </tr>
+            ) : (
+              data.map((l) => {
+                const localTotal = l.local?.total ?? 0;
+                const centralTotal = l.central?.total ?? 0;
+                const diferenciaTotal = l.diferencia?.total ?? 0;
 
+                return (
+                  <tr key={l.codLocal}>
+
+                    {/* LOCAL */}
+                    <td>
+                      <div className="fw-semibold">
+                        {l.name || "Sin nombre"}
+                      </div>
+
+                      {/* Mobile: mostrar central como secundario */}
+                      <div className="d-md-none text-muted small">
+                        Central: ${centralTotal.toLocaleString("es-CL")}
+                      </div>
+                    </td>
+
+                    {/* LOCAL */}
+                    <td className="text-end">
+                      ${localTotal.toLocaleString("es-CL")}
+                    </td>
+
+                    {/* CENTRAL SOLO DESKTOP */}
+                    <td className="text-end d-none d-md-table-cell">
+                      ${centralTotal.toLocaleString("es-CL")}
+                    </td>
+
+                    {/* DIFERENCIA */}
+                    <td className="text-end fw-bold">
+                      ${diferenciaTotal.toLocaleString("es-CL")}
+                    </td>
+
+                    {/* ESTADO */}
+                    <td>
+                      {diferenciaTotal === 0 ? (
+                        <span className="badge bg-success">
+                          OK
+                        </span>
+                      ) : (
+                        <span className="badge bg-danger">
+                          Diferencia
+                        </span>
+                      )}
+                    </td>
+
+                  </tr>
+                );
+              })
+            )}
+          </tbody>          
         </table>
       </div>
 
       {loading && (
         <div className="progress mb-2">
-          <div className="progress-bar progress-bar-striped progress-bar-animated" style={{ width: "100%" }} >
-            Consultando servidor...
+          <div
+            className="progress-bar progress-bar-striped progress-bar-animated"
+            style={{ width: "100%" }}
+          >
+            Consultando servidor... Por favor espere
           </div>
         </div>
       )}

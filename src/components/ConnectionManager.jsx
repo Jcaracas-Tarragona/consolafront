@@ -21,13 +21,27 @@ function ConnectionManager({ token }) {
 
   // 🔹 Cargar Empresa
   async function cargarEmpresas() {
+
     const res = await fetch(`${API_BASE_URL}/empresas`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
+    // Sesión expirada
+    if (res.status === 401) {
+
+      alert("Su sesión ha expirado. Debe volver a iniciar sesión.");
+
+      localStorage.clear();
+
+      window.location.href = "/login";
+
+      return;
+    }
+
+
     const data = await res.json();
-    setEmpresas(data);
+    setEmpresas(Array.isArray(data) ? data : []);
   }
 
   // ✅ Definir fetchConnections con useCallback
@@ -59,8 +73,7 @@ function ConnectionManager({ token }) {
   // ✅ useEffect solo depende de fetchConnections
   useEffect(() => {
     cargarEmpresas();
-    console.log(empresaSeleccionada);
-    
+       
     fetchConnections();
   }, [fetchConnections]);
   
