@@ -32,8 +32,7 @@ function VentasDistribuidasView({token}) {
       <h4 className="mb-3">📊 Conciliación Local vs Central</h4>
 
       <div style={{ maxHeight: 500, overflowY: "auto" }}>
-        <table className="table table-bordered table-sm align-middle">
-          
+        <table className="table table-sm table-hover mb-0 align-middle">       
           <thead className="table-light sticky-top" style={{ zIndex: 1 }}>
             <tr>
               <th>Local</th>
