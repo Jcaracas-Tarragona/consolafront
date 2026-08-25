@@ -443,49 +443,25 @@ function ConnectionsAdmin({ token }) {
             
           </div>
 
-          
-
           <div className="col-md-6 d-flex gap-2 justify-content-end m-auto">
-            <Select
-              className="flex-grow-1"
-
-              placeholder="Seleccionar Empresa"
-
-              isClearable
-
-              value={
-                  empresas
-                      .map(emp => ({
-                          value: emp.id,
-                          label: emp.nombre
-                      }))
-                      .find(opt => opt.value === form.empresa_id) || null
-              }
-
-              options={empresas.map(emp => ({
-                  value: emp.id,
-                  label: emp.nombre
-              }))}
-
+            <Select className="flex-grow-1" placeholder="Empresa" isClearable
+              value={ empresas .map(emp => ({ value: emp.id, label: emp.nombre }))
+                      .find(opt => opt.value === form.empresa_id) || null }
+              options={empresas.map(emp => ({ value: emp.id, label: emp.nombre }))}
               menuPortalTarget={document.body}
               menuPosition="fixed"
-
               styles={{
                   menuPortal: base => ({
                       ...base,
                       zIndex: 9999
                   })
               }}
-
               onChange={(opt) => {
-
                   setForm(prev => ({
                       ...prev,
                       empresa_id: opt ? opt.value : null
                   }));
-
-              }}
-          />
+              }} />
             <button className="btn btn-success w-25" onClick={guardar}>
               {form.id ? "Actualizar" : "Crear"}
             </button>

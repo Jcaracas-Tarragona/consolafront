@@ -123,7 +123,7 @@ function DashboardAgotados({ token }) {
 
       {/* 🔥 FILTROS */}
       <div className="d-flex gap-2 mb-2 flex-wrap justify-content-between align-items-center">
-        <div className="w-75 datePicker" style={{ maxWidth: 250 }} title="Seleccionar Rango de fecchas">
+        <div className="w-75 datePicker" style={{ maxWidth: 250 }} title="Seleccionar Rango de fechas">
             <DatePicker
                 selectsRange={true}
                 startDate={startDate}

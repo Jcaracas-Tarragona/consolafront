@@ -130,6 +130,11 @@ function MyNavbar({ user, onLogout, token }) {
                 Ingreso Vendedores
               </Nav.Link>
             )}
+            {(role === "Admin" || role === "N1") && (
+              <Nav.Link onClick={() => {navigate("/totems"); setExpanded(false); }}>
+                Monitor Totems
+              </Nav.Link>
+            )}
 
           </Nav>
 

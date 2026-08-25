@@ -1,0 +1,706 @@
+/* =====================================================
+   DASHBOARD
+===================================================== */
+.totems-dashboard {
+  width: 100%;
+  max-width: 100%;
+  height: 450px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* =====================================================
+   TÓTEM
+===================================================== */
+
+.totem-mini {
+  position: relative;
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #fff;
+
+  cursor: pointer;
+
+  transition:
+    transform .15s ease,
+    box-shadow .15s ease,
+    border-color .15s ease;
+}
+
+.totem-mini:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .14);
+}
+
+.totem-mini i {
+  font-size: 1.45rem;
+}
+
+.totem-mini-on {
+  border-color: rgba(25, 135, 84, .35);
+}
+
+.totem-mini-off {
+  border-color: rgba(220, 53, 69, .65);
+}
+
+.totem-mini-number {
+  position: absolute;
+  right: 3px;
+  bottom: 0;
+
+  font-size: .63rem;
+  font-weight: 700;
+}
+
+.totem-status-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+}
+
+
+/* =====================================================
+   GRID LOCALES
+===================================================== */
+
+.totems-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(auto-fill, minmax(180px, 1fr));
+
+  gap: 8px;
+}
+
+
+/* =====================================================
+   RESUMEN
+===================================================== */
+
+.totem-summary-item {
+  font-size: .82rem;
+  white-space: nowrap;
+}
+
+.totem-summary-dot {
+  font-size: .45rem;
+  vertical-align: middle;
+}
+
+
+/* =====================================================
+   ACCIONES
+===================================================== */
+
+.totem-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  margin-left: auto;
+}
+
+
+/* =====================================================
+   BUSCADOR
+===================================================== */
+
+.totem-search-wrapper {
+  position: relative;
+
+  width: 36px;
+  height: 32px;
+
+  flex: 0 0 36px;
+
+  margin-left: 0;
+
+  z-index: 20;
+}
+
+.totem-search-button {
+  width: 36px;
+  height: 32px;
+
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.totem-search-expanded {
+  position: absolute;
+  top: 0;
+  right: 0;
+
+  width: 36px;
+  height: 32px;
+
+  z-index: 30;
+
+  background: #fff;
+  border-radius: 6px;
+
+  overflow: hidden;
+
+  opacity: 0;
+  pointer-events: none;
+
+  transform: translateX(4px);
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, .12);
+
+  transition:
+    width .25s ease,
+    opacity .18s ease,
+    transform .25s ease;
+}
+
+.totem-search-expanded.search-open {
+  width: 280px;
+
+  opacity: 1;
+  transform: translateX(0);
+
+  pointer-events: auto;
+}
+
+.totem-search-expanded.search-closed {
+  width: 36px;
+
+  opacity: 0;
+  transform: translateX(4px);
+
+  pointer-events: none;
+}
+
+.totem-search-expanded .input-group-text,
+.totem-search-expanded .btn {
+  flex: 0 0 auto;
+}
+
+.totem-search-expanded .form-control {
+  min-width: 0;
+}
+
+
+/* =====================================================
+   EMPRESA
+===================================================== */
+
+.totem-company-wrapper {
+  position: relative;
+
+  width: 36px;
+  height: 32px;
+
+  flex: 0 0 36px;
+
+  z-index: 25;
+}
+
+.totem-company-button {
+  width: 36px;
+  height: 32px;
+
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.totem-company-expanded {
+  position: absolute;
+  top: 0;
+  right: 0;
+
+  width: 36px;
+  height: 32px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 4px;
+
+  background: #fff;
+  border-radius: 6px;
+
+  overflow: hidden;
+
+  opacity: 0;
+  pointer-events: none;
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, .12);
+
+  transform: translateX(4px);
+
+  transition:
+    width .25s ease,
+    opacity .18s ease,
+    transform .25s ease;
+}
+
+.totem-company-expanded.company-open {
+  width: 260px;
+
+  padding: 0 4px;
+
+  opacity: 1;
+  transform: translateX(0);
+
+  pointer-events: auto;
+}
+
+.totem-company-expanded.company-closed {
+  width: 36px;
+
+  opacity: 0;
+
+  pointer-events: none;
+}
+
+/* Select escritorio */
+
+.totem-company-expanded select {
+  flex: 1 1 auto;
+
+  width: 200px;
+  min-width: 200px;
+}
+
+.totem-company-expanded .btn {
+  flex: 0 0 auto;
+}
+
+
+/* =====================================================
+   REPORTE
+===================================================== */
+
+.totem-report-wrapper {
+  position: relative;
+
+  width: 36px;
+  height: 32px;
+
+  flex: 0 0 36px;
+
+  z-index: 25;
+}
+
+.totem-report-button {
+  width: 36px;
+  height: 32px;
+
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.totem-report-expanded {
+  position: absolute;
+  top: 0;
+  right: 0;
+
+  width: 36px;
+  height: 32px;
+
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 0;
+
+  background: #fff;
+  border-radius: 6px;
+
+  overflow: visible;
+
+  opacity: 0;
+  pointer-events: none;
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, .12);
+
+  transform: translateX(4px);
+
+  transition:
+    width .25s ease,
+    opacity .18s ease,
+    transform .25s ease;
+}
+
+.totem-report-expanded.report-open {
+  width: 230px;
+
+  padding: 0 4px;
+
+  opacity: 1;
+  transform: translateX(0);
+
+  pointer-events: auto;
+}
+
+.totem-report-expanded.report-closed {
+  width: 36px;
+
+  opacity: 0;
+  transform: translateX(4px);
+
+  pointer-events: none;
+}
+
+.totem-report-expanded input {
+  width: 130px;
+  flex: 0 0 130px;
+}
+
+
+/* =====================================================
+   DATEPICKER
+===================================================== */
+
+.react-datepicker-popper {
+  z-index: 999999 !important;
+}
+
+.react-datepicker {
+  z-index: 999999 !important;
+}
+
+
+/* =====================================================
+   POPOVER TÓTEM GLOBAL
+===================================================== */
+
+.totem-floating-popover {
+  position: fixed;
+
+  width: 230px;
+  min-height: 110px;
+
+  padding: 10px 12px;
+
+  background: #212529;
+  color: #fff;
+
+  border-radius: 8px;
+
+  box-shadow:
+    0 8px 25px rgba(0, 0, 0, .35);
+
+  font-size: .75rem;
+
+  z-index: 999999;
+
+  pointer-events: none;
+
+  animation: totemPopoverIn .14s ease-out;
+}
+
+@keyframes totemPopoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.totem-popover-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 7px;
+  padding-bottom: 6px;
+
+  border-bottom:
+    1px solid rgba(255, 255, 255, .15);
+
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+.totem-popover-row {
+  display: flex;
+  justify-content: space-between;
+
+  gap: 10px;
+
+  margin-top: 4px;
+}
+
+.totem-popover-row span {
+  color: #adb5bd;
+}
+
+.totem-popover-row strong {
+  font-weight: 500;
+  text-align: right;
+}
+
+.totem-popover-warning {
+  margin: 6px 0;
+  padding: 4px 6px;
+
+  border-radius: 4px;
+
+  background:
+    rgba(255, 193, 7, .15);
+
+  color: #ffc107;
+
+  font-weight: 500;
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 768px) {
+
+  /* -----------------------------------------
+     HEADER
+  ----------------------------------------- */
+
+  .totem-dashboard-header {
+    width: 100%;
+    padding-right: 0;
+  }
+
+  .totems-dashboard {
+    height: 600px;
+  }
+
+
+  /* -----------------------------------------
+     ACCIONES
+  ----------------------------------------- */
+
+  .totem-actions {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 6px;
+
+    margin-top: 6px;
+    margin-left: 0;
+
+    padding-top: 6px;
+
+    border-top: 1px solid #f0f0f0;
+  }
+
+
+  .totem-actions .totem-search-wrapper,
+  .totem-actions .totem-company-wrapper,
+  .totem-actions .totem-report-wrapper {
+    position: relative;
+
+    top: auto;
+    right: auto;
+    left: auto;
+
+    width: 36px;
+    height: 32px;
+
+    flex: 0 0 36px;
+
+    margin: 0;
+  }
+
+
+  /* -----------------------------------------
+     BOTONES
+  ----------------------------------------- */
+
+  .totem-search-button,
+  .totem-company-button,
+  .totem-report-button {
+    position: static;
+  }
+
+
+  /* -----------------------------------------
+     DESPLEGABLES
+  ----------------------------------------- */
+
+  .totem-search-expanded,
+  .totem-company-expanded,
+  .totem-report-expanded {
+    position: absolute;
+
+    top: 0;
+    right: 0;
+    left: auto;
+
+    max-width: calc(100vw - 40px);
+  }
+
+
+  /* -----------------------------------------
+     BUSCADOR
+  ----------------------------------------- */
+
+  .totem-search-expanded.search-open {
+    width: min(280px, calc(100vw - 40px));
+  }
+
+
+  /* -----------------------------------------
+     EMPRESA
+  ----------------------------------------- */
+
+  .totem-company-expanded.company-open {
+    width: min(260px, calc(100vw - 40px));
+    max-width: calc(100vw - 40px);
+
+    padding: 0 4px;
+
+    overflow: hidden;
+  }
+
+  /*
+   * IMPORTANTE:
+   *
+   * El select debe adaptarse al espacio que queda.
+   * No dejamos min-width heredado de escritorio.
+   */
+
+  .totem-company-expanded select {
+    flex: 1 1 0;
+
+    width: 0;
+    min-width: 0;
+    max-width: 100%;
+
+    font-size: .8rem;
+  }
+
+
+  .totem-company-expanded .btn {
+    width: 32px;
+
+    flex: 0 0 32px;
+
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+
+  /* -----------------------------------------
+     REPORTE
+     Aunque actualmente no se muestra en móvil,
+     queda protegido por si se reutiliza.
+  ----------------------------------------- */
+
+  .totem-report-expanded.report-open {
+    width: min(260px, calc(100vw - 40px));
+  }
+
+  .totem-report-expanded .react-datepicker-wrapper {
+    width: auto;
+    min-width: 0;
+
+    flex: 1 1 0;
+  }
+
+  .totem-report-expanded
+  .react-datepicker__input-container {
+    width: 100%;
+  }
+
+  .totem-report-expanded input,
+  .totem-report-expanded .form-control {
+    width: 100%;
+    min-width: 0;
+
+    flex: 1 1 0;
+  }
+
+
+  /* -----------------------------------------
+     BOTONES INTERNOS
+  ----------------------------------------- */
+
+  .totem-search-expanded .btn,
+  .totem-company-expanded .btn,
+  .totem-report-expanded .btn {
+    flex-shrink: 0;
+  }
+}
+
+
+/* =====================================================
+   MOBILE PEQUEÑO
+===================================================== */
+
+@media (max-width: 480px) {
+
+  .totem-search-expanded.search-open {
+    width: min(
+      240px,
+      calc(100vw - 32px)
+    );
+  }
+
+
+  .totem-company-expanded.company-open {
+    width: min(
+      240px,
+      calc(100vw - 32px)
+    );
+
+    max-width:
+      calc(100vw - 32px);
+  }
+
+
+  .totem-summary-item {
+    font-size: .76rem;
+  }
+
+
+  .totem-mini {
+    width: 39px;
+    height: 39px;
+  }
+
+
+  .totem-mini i {
+    font-size: 1.3rem;
+  }
+
+
+  .totem-floating-popover {
+    width: 210px;
+  }
+}

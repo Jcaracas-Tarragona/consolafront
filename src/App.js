@@ -15,6 +15,7 @@ import AdminDashboard from "./components/admin/AdminDashboard";
 import DashMenu from "./components/pages/DashMenu";
 import Articulos from "./components/articles/ArticlesPage";
 import Vendedores from "./components/rrhh/Vendedores";
+import Totems from "./components/totems/TotemsDashboard";
 import ProtectedByRole from "./components/ProtectedByRole";
 import { useAuthGuard } from "./hooks/useAuthGuard";
 
@@ -26,7 +27,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 function Layout({ token, user }) {
   const location = useLocation();
 
-  const MANAGEMENT_ROUTES = ["/admin", "/menu-locales","/vendedores"];
+  const MANAGEMENT_ROUTES = ["/admin", "/menu-locales","/vendedores","/totems","/articulos"];
 
   const isManagementView = MANAGEMENT_ROUTES.some((path) =>
     location.pathname.startsWith(path)
@@ -86,6 +87,17 @@ function Layout({ token, user }) {
           }
         />
 
+        <Route
+          path="/totems"
+          element={
+            <ProtectedByRole user={user} roles={["Admin", "N1"]}>
+              <Totems token={token} />
+            </ProtectedByRole>
+          }
+        />  
+
+        {/* RUTA POR DEFECTO */}
+
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>
@@ -106,6 +118,7 @@ const FooterContent = () => (
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("authToken") || "");
+  const location = useLocation();
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem("authUser");
@@ -114,6 +127,9 @@ function App() {
       return null;
     }
   });
+
+  const vistaAmplia =
+    location.pathname.includes("/totems");
 
   const handleLogin = (newToken, newUser) => {
     localStorage.setItem("authToken", newToken);
@@ -143,7 +159,7 @@ function App() {
           token={token}
         />
 
-        <main className="container mt-4 flex-grow-1">
+        <main className={`main-content mt-4 flex-grow-1 ${ vistaAmplia ? "main-content-wide" : "" }`} >
           <Layout token={token} user={user} />
         </main>
 
