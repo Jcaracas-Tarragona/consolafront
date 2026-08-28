@@ -4,7 +4,7 @@ import { API_BASE_URL } from "../../config";
 import AsignarZonalModal from "./AsignarZonalModal";
 import MobileActions from "../utils/MobileActions";
 
-const ROLES = ["Admin","N1","N2","Local","Comercial","Zonal","RRHH"];
+const ROLES = ["Admin","N1","N2","Local","Comercial","Zonal","RRHH","Gerente"];
 
 function UsersManager({ token }) {
   const [users, setUsers] = useState([]);

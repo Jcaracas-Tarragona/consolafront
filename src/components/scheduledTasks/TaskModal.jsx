@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Modal, Button, Form, Row, Col } from "react-bootstrap";
 import { API_BASE_URL } from "../../config";
 
@@ -27,33 +27,11 @@ export default function TaskModal({show,onClose,refresh,task,token}) {
   const [nuevoArticulo, setNuevoArticulo] = useState("");
   const [articulos, setArticulos] = useState([]);
 
-  useEffect(() => {
-    if (!show) return;
-    if (task) {
-      cargarTask(task.id);
-    } else {
-
-      setForm({
-        nombre: "",
-        descripcion: "",
-        activo: true,
-        visible: true,
-        requiere_confirmacion: false,
-        dia_activar: "",
-        dia_desactivar: "",
-        omitir_proxima_desactivacion: false
-      });
-
-      setArticulos([]);
-    }
-
-  }, [show, task]);
-
-  async function cargarTask(id) {  
+  const cargarTask = useCallback(async (id) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/scheduled-tasks/tarea/${id}`, {
-            method: "GET",
-            headers: {
+      const res = await fetch( `${API_BASE_URL}/scheduled-tasks/tarea/${id}`, {
+          method: "GET",
+          headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json"
           }
@@ -61,6 +39,12 @@ export default function TaskModal({show,onClose,refresh,task,token}) {
       );
 
       const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          data.message || "Error cargando la tarea"
+        );
+      }
 
       setForm({
         nombre: data.nombre,
@@ -75,16 +59,41 @@ export default function TaskModal({show,onClose,refresh,task,token}) {
       });
 
       setArticulos(
-        data.articulos.length
+        data.articulos?.length
           ? data.articulos.map(x => x.codigo_articulo)
           : []
       );
 
     } catch (err) {
-      console.error(err);
+      console.error("Error cargando tarea:", err);
+    }
+  }, [token]);
+
+
+  /* CARGAR / LIMPIAR MODAL */
+
+  useEffect(() => {
+    if (!show) return;
+
+    if (task) {
+      cargarTask(task.id);
+      return;
     }
 
-  }
+    setForm({
+      nombre: "",
+      descripcion: "",
+      activo: true,
+      visible: true,
+      requiere_confirmacion: false,
+      dia_activar: "",
+      dia_desactivar: "",
+      omitir_proxima_desactivacion: false
+    });
+
+    setArticulos([]);
+
+  }, [show, task, cargarTask]);
 
   function onChange(e) {
 
@@ -99,7 +108,7 @@ export default function TaskModal({show,onClose,refresh,task,token}) {
 
   }
 
-  function cambiarArticulo(index, value) {
+  /*function cambiarArticulo(index, value) {
 
     const copia = [...articulos];
 
@@ -107,7 +116,7 @@ export default function TaskModal({show,onClose,refresh,task,token}) {
 
     setArticulos(copia);
 
-  }
+  }*/
 
 function agregarArticulo() {
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback,useEffect, useState } from "react";
 import { Badge } from "react-bootstrap";
 import TaskModal from "./TaskModal";
 import TaskResultsModal from "./TaskResultsModal";
@@ -19,9 +19,9 @@ function ScheduledTasks({token}) {
   const [runningTaskId, setRunningTaskId] = useState(null);
   const [runningType, setRunningType] = useState(null); // "run" | "retry"
   const [progress, setProgress] = useState(0);
+  
 
-
-   const cargarTareas = async () => { 
+   const cargarTareas = useCallback( async () => { 
     try {
       setLoading(true);
       const res = await fetch(`${API_BASE_URL}/scheduled-tasks/tareas`,{
@@ -42,11 +42,11 @@ function ScheduledTasks({token}) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(()=>{
     cargarTareas();
-  },[]);
+  },[cargarTareas]);
 
 
   const ejecutarTarea = async(id)=>{

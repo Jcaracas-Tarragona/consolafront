@@ -1,9 +1,58 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { API_BASE_URL } from "../../config";
 import DatePicker from "react-datepicker";
 import "./TotemsDashboard.css";
 import * as XLSX from "xlsx";
+
+/* =====================================================
+   UTILIDADES DE FECHA / ESTADO
+===================================================== */
+
+const obtenerFechaHoy = () => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date());
+
+  const get = tipo =>
+    parts.find(p => p.type === tipo)?.value;
+
+  return `${get("year")}-${get("month")}-${get("day")}`;
+};
+
+const obtenerFechaRegistro = fecha =>
+  fecha ? String(fecha).substring(0, 10) : "";
+
+const esRegistroHoy = item =>
+  obtenerFechaRegistro(item.fecha) === obtenerFechaHoy();
+
+const obtenerEstadoVisual = item =>
+  esRegistroHoy(item) && item.estado === "ON"
+    ? "ON"
+    : "OFF";
+
+const formatoHora = fecha => {
+  if (!fecha) return "-";
+
+  return new Date(fecha).toLocaleTimeString("es-CL", {
+    timeZone: "America/Santiago",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+};
+
+const formatoFecha = fecha => {
+  const valor = obtenerFechaRegistro(fecha);
+
+  if (!valor) return "-";
+
+  const [year, month, day] = valor.split("-");
+
+  return `${day}/${month}/${year}`;
+};
 
 function TotemsDashboard({ token }) {
   const [data, setData] = useState([]);
@@ -22,47 +71,9 @@ function TotemsDashboard({ token }) {
 
   const isAdmin = user.role === "Admin";
 
-  const obtenerFechaHoy = () => {
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Santiago",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit"
-    }).formatToParts(new Date());
+  const cargarDatos = useCallback(async (mostrarLoading = false) => {
+    if (!token) return; 
 
-    const get = tipo => parts.find(p => p.type === tipo)?.value;
-
-    return `${get("year")}-${get("month")}-${get("day")}`;
-  };
-
-  const obtenerFechaRegistro = fecha =>
-    fecha ? String(fecha).substring(0, 10) : "";
-
-  const esRegistroHoy = item =>
-    obtenerFechaRegistro(item.fecha) === obtenerFechaHoy();
-
-  const obtenerEstadoVisual = item =>
-    esRegistroHoy(item) && item.estado === "ON" ? "ON" : "OFF";
-
-  const formatoHora = fecha => {
-    if (!fecha) return "-";
-
-    return new Date(fecha).toLocaleTimeString("es-CL", {
-      timeZone: "America/Santiago",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  };
-
-  const formatoFecha = fecha => {
-    const valor = obtenerFechaRegistro(fecha);
-    if (!valor) return "-";
-
-    const [year, month, day] = valor.split("-");
-    return `${day}/${month}/${year}`;
-  };
-
-  const cargarDatos = async (mostrarLoading = false) => {
     if (mostrarLoading) setLoading(true);
 
     setError("");
@@ -98,9 +109,10 @@ function TotemsDashboard({ token }) {
     } finally {
       if (mostrarLoading) setLoading(false);
     }
-  };
+  }, [token]);
 
-  const cargarEmpresas = async () => {
+  const cargarEmpresas = useCallback(async () => {
+    if (!token) return;
     try {
       const res = await fetch(`${API_BASE_URL}/empresas`, {
         headers: {
@@ -115,12 +127,12 @@ function TotemsDashboard({ token }) {
       console.error("Error cargando empresas:", err);
       setEmpresas([]);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     cargarDatos(true);
     cargarEmpresas();
-  }, []);
+  }, [cargarDatos, cargarEmpresas]);
 
   useEffect(() => {
     const interval = setInterval(
@@ -129,7 +141,7 @@ function TotemsDashboard({ token }) {
     );
 
     return () => clearInterval(interval);
-  }, []);
+  }, [cargarDatos]);
 
   const locales = useMemo(() => {
     const mapa = new Map();
@@ -411,7 +423,7 @@ function TotemsDashboard({ token }) {
           };
 
           dias.forEach(fecha => {
-            const [year, month, day] = fecha.split("-");
+            const [, month, day] = fecha.split("-");
             const columna = `${day}/${month}`;
 
             row[columna] = item.dias[fecha] || "--";

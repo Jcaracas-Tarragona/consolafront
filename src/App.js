@@ -22,6 +22,28 @@ import { useAuthGuard } from "./hooks/useAuthGuard";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
+
+function getHomeByRole(role) {
+  switch (role) {
+    case "Gerente":
+      return "/totems";
+
+    case "RRHH":
+      return "/vendedores";
+
+    case "Admin":
+    case "N1":
+    case "N2":
+      return "/";
+
+    case "Comercial":
+    case "Zonal":
+      return "/menu-locales";
+
+    default:
+      return "/";
+  }
+}
 /* -------------------- LAYOUT -------------------- */
 
 function Layout({ token, user }) {
@@ -46,8 +68,12 @@ function Layout({ token, user }) {
       )}
 
       <Routes>
-        <Route path="/" element={null} />
-
+        <Route path="/" element={
+            ["Gerente", "RRHH", "Comercial", "Zonal"].includes(user?.role)
+              ? <Navigate to={getHomeByRole(user?.role)} replace />
+              : null
+          }
+        />
         {/* ADMIN */}
         <Route
           path="/admin/*"
@@ -90,7 +116,7 @@ function Layout({ token, user }) {
         <Route
           path="/totems"
           element={
-            <ProtectedByRole user={user} roles={["Admin", "N1"]}>
+            <ProtectedByRole user={user} roles={["Admin", "N1", "Gerente"]}>
               <Totems token={token} />
             </ProtectedByRole>
           }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { API_BASE_URL } from "../../config";
 
 function UltimaVentaLocal({ token }) {
@@ -13,13 +13,14 @@ function UltimaVentaLocal({ token }) {
   const [empresaId, setEmpresaId] = useState(1);
 
   /* CONSULTAR BACKEND */
-
-  const cargar = async (empresa = empresaId) => {
+  const cargar = useCallback(async (empresa) => {
     setLoading(true);
     setError("");
 
     try {
-      const r = await fetch( `${API_BASE_URL}/ventas/estado-horario?empresa_id=${empresa}`, {
+      const r = await fetch(
+        `${API_BASE_URL}/ventas/estado-horario?empresa_id=${empresa}`,
+        {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -33,42 +34,63 @@ function UltimaVentaLocal({ token }) {
         return;
       }
 
-      if (!r.ok) {
-        throw new Error("Error servidor");
-      }
-
       const d = await r.json();
 
-      const registros = Array.isArray(d) ? d : [];
+      if (r.status === 503) {
+        setError(
+          d.message ||
+          "Servidor central no disponible."
+        );
 
-      /* ORDENAR POR PRIORIDAD */
+        setData([]);
+        setDataOriginal([]);
+        return;
+      }
 
-      registros.sort((a, b) => {
-        const prioridad = {
-          "Sin ventas hoy": 1,
-          Critica: 2,
-          "Demora leve": 3,
-          "En horario": 4,
-          Cerrado: 5,
-        };
+      if (!r.ok) {
+        throw new Error(
+          d.message ||
+          "Error consultando estado"
+        );
+      }
 
-        return (
+      const registros =
+        Array.isArray(d) ? d : [];
+
+      const prioridad = {
+        "Sin ventas hoy": 1,
+        Critica: 2,
+        "Demora leve": 3,
+        "En horario": 4,
+        Cerrado: 5,
+      };
+
+      registros.sort(
+        (a, b) =>
           (prioridad[a.estado] ?? 99) -
           (prioridad[b.estado] ?? 99)
-        );
-      });
+      );
 
       setDataOriginal(registros);
 
     } catch (err) {
-      setError("Error consultando estado");
+      console.error(
+        "Error consultando estado:",
+        err
+      );
+
+      setError(
+        err.message ||
+        "Error consultando estado"
+      );
+
       setData([]);
       setDataOriginal([]);
 
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   /* CARGA INICIAL + CAMBIO EMPRESA */
 
@@ -77,7 +99,7 @@ function UltimaVentaLocal({ token }) {
     setDataOriginal([]);
 
     cargar(empresaId);
-  }, [empresaId]);
+  }, [empresaId,cargar]);
 
   /* AUTO REFRESH */
 
@@ -87,7 +109,7 @@ function UltimaVentaLocal({ token }) {
     }, 500000);
 
     return () => clearInterval(intervalo);
-  }, [empresaId]);
+  }, [empresaId,cargar]);
 
   /* FILTRO ESTADO */
 

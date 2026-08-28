@@ -108,7 +108,7 @@ function MyNavbar({ user, onLogout, token }) {
         <Navbar.Collapse id="navbarNav">
           <Nav className="me-auto">
 
-            {role !== "Comercial" && role !== "Zonal" && role !== "RRHH" && (
+            {role !== "Comercial" && role !== "Zonal" && role !== "RRHH" && role !== "Gerente" &&(
               <Nav.Link onClick={() => {navigate("/"); setExpanded(false); }}>
                 Panel de Gestión
               </Nav.Link>
@@ -130,7 +130,7 @@ function MyNavbar({ user, onLogout, token }) {
                 Ingreso Vendedores
               </Nav.Link>
             )}
-            {(role === "Admin" || role === "N1") && (
+            {(role === "Admin" || role === "N1" || role === "Gerente") && (
               <Nav.Link onClick={() => {navigate("/totems"); setExpanded(false); }}>
                 Monitor Totems
               </Nav.Link>
