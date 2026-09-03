@@ -69,7 +69,7 @@ function TotemsDashboard({ token }) {
 
   const user = JSON.parse(localStorage.getItem("authUser") || "{}");
 
-  const isAdmin = user.role === "Admin";
+  const isAdmin = user.role !== "N1";
 
   const cargarDatos = useCallback(async (mostrarLoading = false) => {
     if (!token) return; 

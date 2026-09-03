@@ -1,179 +1,175 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+
 import UserManagement from "./UsersManager";
 import Reports from "./ReportsPanel";
 import Logs from "./LogsViewer";
 import VentasDistribuidasView from "./VentasDistribuidasView";
 import UltimaVentaLocal from "./UltimaVentaLocal";
 import Actualizaciones from "./Actualizaciones";
-import { useLocation } from "react-router-dom";
 import DashboardAgotados from "../pages/DashboardAgotados";
 import ConnectionsAdmin from "./ConnectionsAdmin";
 import ScheduledTasks from "../scheduledTasks/ScheduledTasks";
+import GestionesPage from "../gestiones/GestionesPage";
+
+import "./AdminDashboard.css";
 
 function AdminDashboard({ token }) {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
-  const [visibleCount, setVisibleCount] = useState(4);
-  const [open, setOpen] = useState(false);
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState(
-    location.state?.tab || "users" // default
-  );
+  const menuRef = useRef(null);
 
-  const containerRef = useRef(null);
-  const dropdownRef = useRef(null);
+  const [activeTab, setActiveTab] = useState(location.state?.tab || "users");
+  const [openMenu, setOpenMenu] = useState(null);
 
-  const tabs = [
-    { key: "users", label: "Usuarios" },
-    { key: "reports", label: "Reportes" },
-    { key: "logs", label: "Logs" },
-    { key: "ultima-venta", label: "Distribución" },
-    { key: "ventas", label: "Ventas" },
-    { key: "actualizaciones", label: "Actualización POS" },
-    { key: "agotados", label: "Agotados" },
-    { key: "connections", label: "Locales" },
-    { key: "scheduled-tasks", label: "Tareas" },
+  const grupos = [
+    {
+      key: "operacion",
+      label: "Operación",
+      icon: "bi bi-grid",
+      tabs: [
+        { key: "ultima-venta", label: "Distribución", icon: "bi bi-diagram-3" },
+        { key: "ventas", label: "Ventas", icon: "bi bi-graph-up-arrow" },
+        { key: "agotados", label: "Agotados", icon: "bi bi-exclamation-circle" }
+      ]
+    },
+    {
+      key: "control",
+      label: "Control",
+      icon: "bi bi-clipboard-data",
+      tabs: [
+        { key: "reports", label: "Reportes", icon: "bi bi-bar-chart" },
+        { key: "logs", label: "Logs", icon: "bi bi-journal-text" },
+        { key: "actualizaciones", label: "Actualización POS", icon: "bi bi-arrow-repeat" }
+      ]
+    },
+    {
+      key: "administracion",
+      label: "Administración",
+      icon: "bi bi-gear",
+      tabs: [
+        { key: "users", label: "Usuarios", icon: "bi bi-people" },
+        { key: "scheduled-tasks", label: "Tareas", icon: "bi bi-list-check" },
+        { key: "gestiones", label: "Gestiones", icon: "bi bi-sliders" },
+        { key: "connections", label: "Locales", icon: "bi bi-shop" }
+      ]
+    }
   ];
 
-  useEffect(() => {
-    if (location.state?.tab) {
-      const existe = tabs.some(t => t.key === location.state.tab);
+  const allTabs = grupos.flatMap(grupo => grupo.tabs);
 
-      if (existe) {
-        setActiveTab(location.state.tab);
-      } else {
-        setActiveTab("users");
-      }
+  useEffect(() => {
+    if (!location.state?.tab) return;
+
+    const existe = allTabs.some(tab => tab.key === location.state.tab);
+
+    if (existe) {
+      setActiveTab(location.state.tab);
     }
   }, [location.state]);
 
-  /* detectar tamaño */
+  /* CERRAR POPUP AL HACER CLICK FUERA */
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 992);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  /* calcular tabs SOLO en mobile */
-  useEffect(() => {
-    if (!isMobile) return;
-
-    const calculateTabs = () => {
-      if (!containerRef.current) return;
-
-      const width = containerRef.current.offsetWidth;
-      const tabWidth = 80;
-      const moreWidth = 60;
-
-      let count = Math.floor(width / tabWidth);
-
-      if (count < tabs.length) {
-        count = Math.floor((width - moreWidth) / tabWidth);
-      }
-
-      setVisibleCount(count > 0 ? count : 1);
-    };
-
-    calculateTabs();
-    window.addEventListener("resize", calculateTabs);
-
-    return () => window.removeEventListener("resize", calculateTabs);
-  }, [isMobile, tabs.length]);
-
-  const visibleTabs = tabs.slice(0, visibleCount);
-  const hiddenTabs = tabs.slice(visibleCount);
-
-  /* cerrar dropdown */
-  useEffect(() => {
-    const close = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setOpen(false);
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenMenu(null);
       }
     };
 
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const seleccionarTab = (tabKey) => {
+    setActiveTab(tabKey);
+    setOpenMenu(null);
+  };
+
+  const grupoActivo = (grupo) =>
+    grupo.tabs.some(tab => tab.key === activeTab);
+
+  const tabActivo = allTabs.find(tab => tab.key === activeTab);
 
   const renderTab = () => {
     switch (activeTab) {
-      case "users": return <UserManagement token={token} />;
-      case "reports": return <Reports token={token} />;
-      case "logs": return <Logs token={token} />;
-      case "ultima-venta": return <UltimaVentaLocal token={token} />;
-      case "ventas": return <VentasDistribuidasView token={token} />;
-      case "actualizaciones": return <Actualizaciones token={token} />;
-      case "agotados": return <DashboardAgotados token={token} />;
-      case "connections": return <ConnectionsAdmin token={token} />;
-      case "scheduled-tasks": return <ScheduledTasks token={token} />;
-      default: return null;
+      case "users":
+        return <UserManagement token={token} />;
+
+      case "reports":
+        return <Reports token={token} />;
+
+      case "logs":
+        return <Logs token={token} />;
+
+      case "ultima-venta":
+        return <UltimaVentaLocal token={token} />;
+
+      case "ventas":
+        return <VentasDistribuidasView token={token} />;
+
+      case "actualizaciones":
+        return <Actualizaciones token={token} />;
+
+      case "agotados":
+        return <DashboardAgotados token={token} />;
+
+      case "connections":
+        return <ConnectionsAdmin token={token} />;
+
+      case "scheduled-tasks":
+        return <ScheduledTasks token={token} />;
+
+      case "gestiones":
+        return <GestionesPage token={token} />;
+
+      default:
+        return null;
     }
   };
 
   return (
     <div className="container-fluid p-0">
 
-      <h4 className="fw-bold mb-2">Panel de Administración</h4>
-
-      {/* 🔥 DESKTOP → Bootstrap Tabs */}
-      {!isMobile && (
-        <ul className="nav nav-tabs mb-3">
-          {tabs.map(tab => (
-            <li className="nav-item" key={tab.key}>
-              <button
-                className={`nav-link ${activeTab === tab.key ? "active" : ""}`}
-                onClick={() => setActiveTab(tab.key)}
-              >
-                {tab.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* 🔥 MOBILE → Tabs dinámicos */}
-      {isMobile && (
-        <div className="tabs-line mb-3" ref={containerRef}>
-
-          {visibleTabs.map(tab => (
-            <button
-              key={tab.key}
-              className={`tab-line ${activeTab === tab.key ? "active" : ""}`}
-              onClick={() => setActiveTab(tab.key)}
-            >
-              {tab.label}
-            </button>
-          ))}
-
-          {hiddenTabs.length > 0 && (
-            <div className="dropdown-custom" ref={dropdownRef}>
-              <button className="tab-line more-btn" onClick={() => setOpen(prev => !prev)} >
-                Mas...
-              </button>
-
-              {open && (
-                <div className="dropdown-menu-custom">
-                  {hiddenTabs.map(tab => (
-                    <div key={tab.key} className="dropdown-item-custom" 
-                      onClick={() => {
-                        setActiveTab(tab.key);
-                        setOpen(false);
-                      }}
-                    >
-                      {tab.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
+      <div className="admin-header">
+        <div>
+          <h4 className="fw-bold mb-0">Panel de Administración</h4>
         </div>
-      )}
+      </div>
 
-      <div >
+      <div className="admin-menu" ref={menuRef}>
+        {grupos.map(grupo => (
+          <div className="admin-menu-group" key={grupo.key}>
+
+            <button className={`admin-menu-button ${grupoActivo(grupo) ? "active" : ""}`}
+              onClick={() => setOpenMenu(openMenu === grupo.key ? null : grupo.key)}>
+              <i className={grupo.icon}></i>
+              <span>{grupo.label}</span>
+              <i className={`bi bi-chevron-${openMenu === grupo.key ? "up" : "down"} admin-chevron`}></i>
+            </button>
+
+            {openMenu === grupo.key && (
+              <div className="admin-popup-menu">
+                {grupo.tabs.map(tab => (
+                  <button key={tab.key}
+                    className={`admin-popup-item ${activeTab === tab.key ? "active" : ""}`}
+                    onClick={() => seleccionarTab(tab.key)}>
+                    <i className={tab.icon}></i>
+
+                    <span>{tab.label}</span>
+
+                    {activeTab === tab.key && (
+                      <i className="bi bi-check-lg ms-auto"></i>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
+          </div>
+        ))}
+      </div>
+
+      <div className="admin-content">
         {renderTab()}
       </div>
 

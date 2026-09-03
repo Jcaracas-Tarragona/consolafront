@@ -165,7 +165,7 @@ function QueryExecutor({ token }) {
           )}
         </div>
 
-        <button className="btn btn-outline-primary me-2"
+        <button className="btn btn-outline-primary me-2 "
             onClick={loadArticulos}
             disabled={connectionStatus !== "OK" || loading} >
           {loading ? "Cargando..." : connectionStatus === "OK" ? "Cargar Artículos" : "Conexión no establecida"}
@@ -181,7 +181,7 @@ function QueryExecutor({ token }) {
       </div>
 
       {message && (
-        <div className={`alert ${message.includes("Error") ? "alert-danger" : "alert-info"}`}>
+        <div className={`p-2 alert ${message.includes("Error") ? "alert-danger" : "alert-info"}`}>
           {message}
         </div>
       )}

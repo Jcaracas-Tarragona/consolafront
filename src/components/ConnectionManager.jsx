@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { API_BASE_URL } from "../config"; 
+import { API_BASE_URL } from "../config";
 import { apiFetch } from "./utils/api";
 import Select from "react-select";
 
@@ -7,49 +7,38 @@ function ConnectionManager({ token }) {
   const [connections, setConnections] = useState([]);
   const [selected, setSelected] = useState("");
   const [message, setMessage] = useState("");
-  const [showAlert, setShowAlert] = useState(false);
   const [connectedId, setConnectedId] = useState(localStorage.getItem("connectedConnectionId") || "");
-  // 🧩 Formulario de nueva conexión / edición
-  const [editing, setEditing] = useState(null);
   const [empresas, setEmpresas] = useState([]);
   const [empresaSeleccionada, setEmpresaSeleccionada] = useState(2);
-  const [form, setForm] = useState({ empresa_id: 2, name: "", host: "", codLocal: "" });
-  
+  const [rutVendedor, setRutVendedor] = useState("");
+  const [vendedorEncontrado, setVendedorEncontrado] = useState(null);
+  const [puestoVendedor, setPuestoVendedor] = useState("");
+  const [estadoVendedor, setEstadoVendedor] = useState("");
+  const [consultandoVendedor, setConsultandoVendedor] = useState(false);
+  const [guardandoVendedor, setGuardandoVendedor] = useState(false);
+  const [mensajeVendedor, setMensajeVendedor] = useState("");
   const user = JSON.parse(localStorage.getItem("authUser") || "{}");
   const isAdmin = user.role === "Admin" || user.role === "N2";
-  
 
-  // 🔹 Cargar Empresa
   async function cargarEmpresas() {
-
     const res = await fetch(`${API_BASE_URL}/empresas`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
-    // Sesión expirada
     if (res.status === 401) {
-
       alert("Su sesión ha expirado. Debe volver a iniciar sesión.");
-
       localStorage.clear();
-
       window.location.href = "/login";
-
       return;
     }
-
-
     const data = await res.json();
     setEmpresas(Array.isArray(data) ? data : []);
   }
 
-  // ✅ Definir fetchConnections con useCallback
   const fetchConnections = useCallback(async () => {
     try {
       const data = await apiFetch("/connections");
-  
-      // ordenar por codLocal si existe
       const sorted = [...data].sort((a, b) => {
         if (a.codLocal && b.codLocal) {
           if (!isNaN(a.codLocal) && !isNaN(b.codLocal)) return Number(a.codLocal) - Number(b.codLocal);
@@ -58,43 +47,47 @@ function ConnectionManager({ token }) {
         return a.id - b.id;
       });
       setConnections(sorted);
-  
-    } catch (err) {
+    } catch {
       setMessage("❌ No se pudieron cargar las conexiones");
     }
   }, []);
 
   const filteredConnections = useMemo(() => {
-      return connections.filter(c =>
-          Number(c.empresa_id) === Number(empresaSeleccionada)
-      );
+    return connections.filter(c => Number(c.empresa_id) === Number(empresaSeleccionada));
   }, [connections, empresaSeleccionada]);
 
-  // ✅ useEffect solo depende de fetchConnections
+  const selectedConnection = useMemo(() => {
+    return connections.find(c => String(c.id) === String(selected)) || null;
+  }, [connections, selected]);
+
   useEffect(() => {
     cargarEmpresas();
-       
     fetchConnections();
   }, [fetchConnections]);
-  
 
-  // 🔹 Probar conexión
-  const handleTestConnection = async (id) => {
+  const limpiarVendedor = () => {
+    setRutVendedor("");
+    setVendedorEncontrado(null);
+    setPuestoVendedor("");
+    setEstadoVendedor("");
+    setMensajeVendedor("");
+  };
+
+  const handleTestConnection = async id => {
     setMessage("⏳ Probando conexión...");
     try {
       const res = await fetch(`${API_BASE_URL}/connections/test/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
       setMessage(data.message || (data.success ? "Conexión OK" : "Error"));
-
       if (data.success) {
-        const connection = connections.find((c) => String(c.id) === String(id));
+        const connection = connections.find(c => String(c.id) === String(id));
         if (connection) {
-          localStorage.setItem("connectedConnectionId", id);
+          localStorage.setItem("connectedConnectionId", String(id));
           localStorage.setItem("connectedConnectionName", connection.name || "");
           localStorage.setItem("connectionStatus", "OK");
-          localStorage.setItem("codLocal",  connection.codLocal);
+          localStorage.setItem("codLocal", connection.codLocal);
           setConnectedId(String(id));
           window.dispatchEvent(new Event("storage"));
         }
@@ -110,118 +103,96 @@ function ConnectionManager({ token }) {
     }
   };
 
-  // 🔍 Buscar por CodLocal en BD interna
-  const checkCodLocal = async (value) => {
-    setForm((prev) => ({ ...prev, codLocal: value }));
-
-    if (!value) {
-      setEditing(false);
-      setForm({ name: "", host: "", codLocal: "" });
+  const consultarVendedor = async () => {
+    if (!selected) {
+      setMensajeVendedor("Debe seleccionar un local.");
       return;
     }
-
+    if (!rutVendedor.trim()) {
+      setMensajeVendedor("Debe ingresar un RUT.");
+      return;
+    }
+    setConsultandoVendedor(true);
+    setMensajeVendedor("");
+    setVendedorEncontrado(null);
+    setPuestoVendedor("");
+    setEstadoVendedor("");
     try {
-      const res = await fetch(`${API_BASE_URL}/connections/by-codlocal/${value}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.id) {
-          // ✅ Existe conexión → modo edición
-          setEditing(true);
-          setForm({
-            name: data.name || "",
-            host: data.host || "",
-            codLocal: data.codLocal || value,
-            id: data.id,
-          });
-        } else {
-          // ❌ No existe → modo agregar
-          setEditing(false);
-          setForm({ name: "", host: "", codLocal: value });
+      const res = await fetch(
+        `${API_BASE_URL}/connections/${selected}/vendedor/${encodeURIComponent(rutVendedor.trim())}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setMensajeVendedor(data.message || "No fue posible consultar el vendedor.");
+        return;
       }
-    } catch (err) {
-      console.error("Error al verificar CodLocal", err);
+      setVendedorEncontrado(data);
+      setPuestoVendedor(String(data.puesto || "").trim().toUpperCase());
+      const activo = Number(data.debaja) === 0 && Number(data.inhab) === 0;
+      setEstadoVendedor(activo ? "ACTIVO" : "INACTIVO");
+    } catch {
+      setMensajeVendedor("Error consultando el vendedor.");
+    } finally {
+      setConsultandoVendedor(false);
     }
   };
 
-  // ➕ Crear nueva conexión
-  const addConnection = async () => {
-    // ✅ Validar campos obligatorios antes de enviar
-    if (!form.name.trim() || !form.host.trim() || !form.codLocal.trim()) {
-      setMessage("Todos los campos son obligatorios.");
+  const guardarVendedor = async () => {
+    if (!vendedorEncontrado) return;
+    if (!puestoVendedor || !estadoVendedor) {
+      setMensajeVendedor("Debe seleccionar puesto y estado.");
       return;
     }
+    const confirmar = window.confirm(`¿Desea guardar los cambios para ${vendedorEncontrado.nombre}?`);
+    if (!confirmar) return;
+    setGuardandoVendedor(true);
+    setMensajeVendedor("");
     try {
-      const res = await fetch(`${API_BASE_URL}/connections`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(form),
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/connections/${selected}/vendedor/${encodeURIComponent(vendedorEncontrado.cuil)}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            vendedor: vendedorEncontrado.vendedor,
+            puesto: puestoVendedor,
+            estado: estadoVendedor
+          })
+        }
+      );
       const data = await res.json();
-      setMessage(data.message || "Conexión agregada");
-      setForm({ name: "", host: "", codLocal: "" });
-      setEditing(false);
-      await fetchConnections(); // 🔄 Actualiza la lista del select
-      window.dispatchEvent(new Event("storage"));
-    } catch (err) {
-      setMessage("❌ Error al agregar conexión");
-    }
-  };
-
-  // 💾 Actualizar conexión existente
-  const updateConnection = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/connections/${form.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      setMessage(data.message || "Conexión actualizada");
-      setEditing(false);
-      setForm({ name: "", host: "", codLocal: "" });
-      await fetchConnections(); // 🔄 Actualiza la lista del select
-      window.dispatchEvent(new Event("storage"));
-    } catch (err) {
-      setMessage("❌ Error al actualizar conexión");
-    }
-  };
-
-  // 🗑️ Eliminar conexión
-  const deleteConnection = async () => {
-    if (!window.confirm("¿Seguro que deseas eliminar esta conexión?")) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/connections/${form.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setMessage(data.message || "Conexión eliminada");
-      setEditing(false);
-      setForm({ name: "", host: "", codLocal: "" });
-      await fetchConnections(); // 🔄 Actualiza la lista del select
-      window.dispatchEvent(new Event("storage"));
-    } catch (err) {
-      setMessage("❌ Error al eliminar conexión");
+      if (!res.ok) {
+        setMensajeVendedor(data.message || "No fue posible guardar los cambios.");
+        return;
+      }
+      const activo = estadoVendedor === "ACTIVO";
+      setVendedorEncontrado(prev => ({
+        ...prev,
+        puesto: puestoVendedor,
+        debaja: activo ? 0 : 1,
+        inhab: activo ? 0 : 1
+      }));
+      setMensajeVendedor(data.message || "Vendedor actualizado correctamente. RRHH fue notificado.");
+    } catch {
+      setMensajeVendedor("Error guardando los cambios.");
+    } finally {
+      setGuardandoVendedor(false);
     }
   };
 
   useEffect(() => {
     if (!message) return;
-
     const timer = setTimeout(() => {
       setMessage("");
     }, 10000);
-
     return () => clearTimeout(timer);
   }, [message]);
 
@@ -229,131 +200,183 @@ function ConnectionManager({ token }) {
     <div className="card p-4 shadow-sm">
       <h4 className="mb-3">Gestión de Conexiones</h4>
 
-      <div className="d-flex gap-4 align-items-center">
-        <label className="form-label fw-bold">Empresa:</label>
-          <Select className="flex-grow-1 w-25"
-            value={
-                empresas
-                    .map(emp => ({
-                        value: emp.id,
-                        label: emp.nombre
-                    }))
-                    .find(opt => opt.value === empresaSeleccionada)
-            }
-            options={empresas.map(emp => ({
-                value: emp.id,
-                label: emp.nombre
-            }))}
-            onChange={(opt) => {
-                setEmpresaSeleccionada(opt.value);
-                setForm(prev => ({
-                    ...prev,
-                    empresa_id: opt.value
-                }));
-                setSelected("");
-            }}
-          />
+      <div className="d-flex gap-4 align-items-center flex-wrap">
+        <label className="form-label fw-bold mb-0">Empresa:</label>
+        <Select
+          className="flex-grow-1"
+          styles={{ container: base => ({ ...base, minWidth: 220 }) }}
+          value={empresas
+            .map(emp => ({
+              value: emp.id,
+              label: emp.nombre
+            }))
+            .find(opt => Number(opt.value) === Number(empresaSeleccionada)) || null}
+          options={empresas.map(emp => ({
+            value: emp.id,
+            label: emp.nombre
+          }))}
+          onChange={opt => {
+            setEmpresaSeleccionada(opt?.value || "");
+            setSelected("");
+            limpiarVendedor();
+            localStorage.removeItem("connectedConnectionId");
+            localStorage.removeItem("connectedConnectionName");
+            localStorage.removeItem("connectionStatus");
+            localStorage.removeItem("codLocal");
+            setConnectedId("");
+            window.dispatchEvent(new Event("storage"));
+          }}
+        />
 
-          <Select className="flex-grow-1 w-75"
-            options={filteredConnections.map(c => ({
+        <Select className="flex-grow-1" styles={{ container: base => ({ ...base, minWidth: 320 }) }}
+          options={filteredConnections.map(c => ({
+            value: c.id, label: `${c.codLocal ? `${c.codLocal} — ` : ""}${c.name} (${c.host})`
+          }))}
+          placeholder="Selecciona local o escribe para buscar..." value={filteredConnections
+            .map(c => ({
               value: c.id,
               label: `${c.codLocal ? `${c.codLocal} — ` : ""}${c.name} (${c.host})`
-            }))}
-            placeholder="Selecciona local o escribe para buscar..."
-            value={filteredConnections
-              .map(c => ({
-                value: c.id,
-                label: `${c.codLocal ? `${c.codLocal} — ` : ""}${c.name} (${c.host})`
-              }))
-              .find(opt => opt.value === selected) || null}
-            onChange={(opt) => {
-              const id = opt?.value;
-              setSelected(id);
-
-              localStorage.setItem("connectedConnectionId", "");
-              localStorage.setItem("connectedConnectionName", "");
-              localStorage.setItem("connectionStatus", "PENDING");
-              window.dispatchEvent(new Event("storage"));
-
-              if (id) handleTestConnection(id);
-            }}
-          />
+            }))
+            .find(opt => String(opt.value) === String(selected)) || null}
+          onChange={opt => {
+            const id = opt?.value || "";
+            setSelected(id);
+            limpiarVendedor();
+            localStorage.setItem("connectedConnectionId", "");
+            localStorage.setItem("connectedConnectionName", "");
+            localStorage.setItem("connectionStatus", "PENDING");
+            window.dispatchEvent(new Event("storage"));
+            if (id) handleTestConnection(id);
+          }}
+        />
       </div>
 
       {message && (
-        <div
-          className={`alert mt-2 ${
+        <div className={`alert my-2 p-2 ${
             message.includes("OK")
               ? "alert-success"
               : message.includes("⏳")
               ? "alert-info"
               : "alert-warning"
-          }`}
-        >
+          }`} >
           {message}
         </div>
-        
       )}
 
+      {isAdmin && (
+        <>
+          <hr className="my-3" />
+          <h5 className="mb-1">Consultar Vendedor</h5>
 
-
-      <hr />
-      <h5>{editing ? "Editar conexión" : "Nueva conexión"}</h5>
-
-      {/* 🆕 Formulario de Nueva Conexión */}
-      <div className="pt-1 mt-1">
-        <div className="d-flex gap-2">
-          <input
-            type="text"
-            className="form-control"
-            required
-            placeholder="Cod Local"
-            value={form.codLocal}
-            onChange={(e) => checkCodLocal(e.target.value)}
-          />
-          <input
-            type="text"
-            className="form-control"
-            required
-            placeholder="Nombre"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <input
-            type="text"
-            className="form-control"
-            required
-            placeholder="Host"
-            value={form.host}
-            onChange={(e) => setForm({ ...form, host: e.target.value })}
-          />
-
-          {!editing ? (
-            // NUEVA CONEXIÓN — solo admin puede crear
-            isAdmin && (
-              <button className="btn btn-success" onClick={addConnection} title="Guardar Nuevo Local">
-                ➕ 
-              </button>
-            )
+          {!selected || String(connectedId) !== String(selected) ? (
+            <div className="alert alert-secondary mb-0 p-1 px-2">
+              Seleccione un local para consultar un vendedor.
+            </div>
           ) : (
-            <>
-              {/* Guardar — siempre disponible */}
-              <button className="btn btn-warning" onClick={updateConnection} title="Actualizar Local">
-                💾 
-              </button>
+            <div>
+              <div className="row g-3 align-items-center">
+                {selectedConnection && (
+                  <div className="col-md-4">
+                    <div className="d-flex align-items-end gap-2">
+                      <span className="fw-bold">Local:</span>
+                      <span className="small text-truncate">{selectedConnection.codLocal} — {selectedConnection.name}</span>
+                    </div>
+                  </div>
+                )}
+                <div className={selectedConnection ? "col-md-5" : "col-md-8"}>
+                  <div className="d-flex align-items-end gap-2">
+                    <label className="form-label fw-bold">RUT:</label>
+                    <input type="text" className="form-control" placeholder="Ingrese RUT" value={rutVendedor}
+                      onChange={e => {
+                        setRutVendedor(e.target.value);
+                        setVendedorEncontrado(null);
+                        setPuestoVendedor("");
+                        setEstadoVendedor("");
+                        setMensajeVendedor("");
+                      }}
+                      onKeyDown={e => { if (e.key === "Enter") consultarVendedor(); }} />
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="d-flex align-items-center gap-2">
+                    <button type="button" className="btn btn-primary w-100" onClick={consultarVendedor}
+                      disabled={!rutVendedor.trim() || consultandoVendedor} >
+                      {consultandoVendedor ? "Consultando..." : "Consultar"}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-              {/* Eliminar — solo admin */}
-              {isAdmin && (
-                <button className="btn btn-danger" onClick={deleteConnection} title="Eliminar Local">
-                  🗑️ 
-                </button>
+              {vendedorEncontrado && (
+                <div className="border rounded p-2 mt-3">
+                  <div className="row g-3 mb-3">
+                    <div className="col-md-4">
+                      <div className="d-flex align-items-end gap-2">
+                        <small className="text-muted d-block">Nombre:</small>
+                        <strong className="text-truncate" title={vendedorEncontrado.nombre}>{vendedorEncontrado.nombre}</strong>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="d-flex align-items-end gap-2">
+                        <small className="text-muted d-block">RUT:</small>
+                        <strong>{vendedorEncontrado.cuil}</strong>
+                      </div>
+                    </div>
+                    
+                    <div className="col-md-4">
+                      <div className="d-flex align-items-end gap-2">
+                        <small className="text-muted d-block">Estado Actual:</small>
+                        {Number(vendedorEncontrado.debaja) === 0 && Number(vendedorEncontrado.inhab) === 0 ? (
+                          <span className="badge bg-success">ACTIVO</span>
+                        ) : (
+                          <span className="badge bg-danger">INACTIVO</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="row g-3 align-items-end">
+                    <div className="col-md-5">
+                      <div className="d-flex align-items-end gap-2">
+                        <label className="form-label fw-bold">Puesto</label>
+                        <select className="form-select" value={puestoVendedor}
+                          onChange={e => setPuestoVendedor(e.target.value)} >
+                          <option value="">Seleccione...</option>
+                          <option value="CAJERO">CAJERO</option>
+                          <option value="GERENTE">GERENTE</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="d-flex align-items-end gap-2">
+                        <label className="form-label fw-bold">Estado</label>
+                        <select className="form-select" value={estadoVendedor}
+                          onChange={e => setEstadoVendedor(e.target.value)} >
+                          <option value="">Seleccione...</option>
+                          <option value="ACTIVO">ACTIVO</option>
+                          <option value="INACTIVO">INACTIVO</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-3">
+                      <button type="button" className="btn btn-success w-100" onClick={guardarVendedor}
+                        disabled={guardandoVendedor || !puestoVendedor || !estadoVendedor} >
+                        {guardandoVendedor ? "Guardando..." : "Guardar"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
-            </>
-          )}
 
-        </div>
-      </div>
-      
+              {mensajeVendedor && (
+                <div className="alert alert-info mt-3 mb-0">
+                  {mensajeVendedor}
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

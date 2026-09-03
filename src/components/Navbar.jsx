@@ -1,26 +1,47 @@
-import React, {useState,useEffect} from "react";
+import React, { useEffect, useState } from "react";
 import { Navbar, Nav, Container, Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 
+const URLS_NOTIFICACIONES_POR_ROL = {
+  Admin: ["*"],
+  RRHH: ["vendedores"]
+};
+
+const RUTAS_NOTIFICACIONES = {
+  vendedores: "/vendedores"
+};
 
 function MyNavbar({ user, onLogout, token }) {
   const [notificaciones, setNotificaciones] = useState([]);
   const [count, setCount] = useState(0);
   const [show, setShow] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
   const role = user?.role;
+  const urlsPermitidas = URLS_NOTIFICACIONES_POR_ROL[role] || [];
+  const puedeVerNotificaciones = urlsPermitidas.length > 0;
 
   const handleLogout = () => {
     onLogout();
     navigate("/");
   };
 
-
-
   const cargarNotificaciones = async () => {
+    if (!puedeVerNotificaciones) {
+      setNotificaciones([]);
+      setCount(0);
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_BASE_URL}/notificaciones`, {
+      let url = `${API_BASE_URL}/notificaciones?leido=false`;
+
+      if (!urlsPermitidas.includes("*")) {
+        url += `&url=${encodeURIComponent(urlsPermitidas[0])}`;
+      }
+
+      const res = await fetch(url, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`
@@ -28,23 +49,29 @@ function MyNavbar({ user, onLogout, token }) {
       });
 
       if (!res.ok) {
-        const text = await res.text();
-        console.error("❌ Error backend:", text);
+        setNotificaciones([]);
+        setCount(0);
         return;
       }
 
       const data = await res.json();
-      
-      setNotificaciones(data); // 👈 reemplaza, no acumula
-      setCount(data.length);   // 👈 correcto
+      const lista = Array.isArray(data) ? data : data.notificaciones || [];
 
-    } catch (err) {
-      console.error(err);
+      setNotificaciones(lista);
+      setCount(lista.length);
+    } catch {
+      setNotificaciones([]);
+      setCount(0);
     }
   };
 
   useEffect(() => {
-    if (role !== "Admin") return;
+    if (!puedeVerNotificaciones) {
+      setNotificaciones([]);
+      setCount(0);
+      return;
+    }
+
     cargarNotificaciones();
 
     const interval = setInterval(() => {
@@ -52,26 +79,43 @@ function MyNavbar({ user, onLogout, token }) {
     }, 500000);
 
     return () => clearInterval(interval);
+  }, [role, token]);
 
-  }, [role]);
+  useEffect(() => {
+    const actualizarNotificaciones = () => {
+      cargarNotificaciones();
+    };
 
-  const marcarYRedirigir = async (notif) => {
+    window.addEventListener(
+      "notificacionesActualizadas",
+      actualizarNotificaciones
+    );
+
+    return () => {
+      window.removeEventListener(
+        "notificacionesActualizadas",
+        actualizarNotificaciones
+      );
+    };
+  }, [role, token]);
+
+  const marcarYRedirigir = async notif => {
     try {
-      const res = await fetch(`${API_BASE_URL}/notificaciones/leido/${notif.id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`
+      const res = await fetch(
+        `${API_BASE_URL}/notificaciones/leido/${notif.id}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
-      });
+      );
 
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("❌ Error backend:", text);
-        return;
-      }
+      if (!res.ok) return;
 
-      cargarNotificaciones(); // 🔥 refresca la lista después de marcar como leído
-      // Redirigir si existe una URL
+      setNotificaciones(prev => prev.filter(n => n.id !== notif.id));
+      setCount(prev => Math.max(0, prev - 1));
+
       if (notif.url?.startsWith("/")) {
         navigate(notif.url);
       } else {
@@ -83,102 +127,174 @@ function MyNavbar({ user, onLogout, token }) {
       }
 
       setShow(false);
+    } catch {}
+  };
 
-    } catch (err) {
-      console.error(err);
+  const abrirNotificacion = async notif => {
+    if (notif.url === "vendedores") {
+      navigate("/vendedores");
+      setShow(false);
+      setExpanded(false);
+      return;
+    }
+
+    if (role === "Admin") {
+      await marcarYRedirigir(notif);
     }
   };
 
-  const [expanded, setExpanded] = useState(false);
-
   return (
-    <Navbar bg="dark" variant="dark" expand="lg" className="shadow-sm" style={{ zIndex: 1050 }}
-      expanded={expanded} onToggle={() => setExpanded(!expanded)} sticky="top">
+    <Navbar
+      bg="dark"
+      variant="dark"
+      expand="lg"
+      className="shadow-sm"
+      style={{ zIndex: 1050 }}
+      expanded={expanded}
+      onToggle={() => setExpanded(!expanded)}
+      sticky="top"
+    >
       <Container fluid>
-
         <Navbar.Brand onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
           <img src="T.png" alt="Logo" style={{ height: "28px", marginRight: "8px" }} />
           Manager Crack
         </Navbar.Brand>
 
-        {/* 🔥 HAMBURGUESA */}
         <Navbar.Toggle aria-controls="navbarNav" />
 
-        {/* 🔥 CONTENIDO COLAPSABLE */}
         <Navbar.Collapse id="navbarNav">
           <Nav className="me-auto">
-
-            {role !== "Comercial" && role !== "Zonal" && role !== "RRHH" && role !== "Gerente" &&(
-              <Nav.Link onClick={() => {navigate("/"); setExpanded(false); }}>
-                Panel de Gestión
-              </Nav.Link>
-            )}
+            {role !== "Comercial" &&
+              role !== "Zonal" &&
+              role !== "RRHH" &&
+              role !== "Gerente" && (
+                <Nav.Link
+                  onClick={() => {
+                    navigate("/");
+                    setExpanded(false);
+                  }}
+                >
+                  Panel de Gestión
+                </Nav.Link>
+              )}
 
             {role === "Admin" && (
-              <Nav.Link onClick={() => {navigate("/admin"); setExpanded(false); }}>
+              <Nav.Link
+                onClick={() => {
+                  navigate("/admin");
+                  setExpanded(false);
+                }}
+              >
                 Administración
               </Nav.Link>
             )}
 
             {(role === "Admin" || role === "Comercial" || role === "Zonal") && (
-              <Nav.Link onClick={() => {navigate("/menu-locales"); setExpanded(false); }}>
+              <Nav.Link
+                onClick={() => {
+                  navigate("/menu-locales");
+                  setExpanded(false);
+                }}
+              >
                 Menú Local
               </Nav.Link>
             )}
+
             {(role === "Admin" || role === "RRHH") && (
-              <Nav.Link onClick={() => {navigate("/vendedores"); setExpanded(false); }}>
+              <Nav.Link
+                onClick={() => {
+                  navigate("/vendedores");
+                  setExpanded(false);
+                }}
+              >
                 Ingreso Vendedores
               </Nav.Link>
             )}
+
             {(role === "Admin" || role === "N1" || role === "Gerente") && (
-              <Nav.Link onClick={() => {navigate("/totems"); setExpanded(false); }}>
+              <Nav.Link
+                onClick={() => {
+                  navigate("/totems");
+                  setExpanded(false);
+                }}
+              >
                 Monitor Totems
               </Nav.Link>
             )}
-
           </Nav>
 
           <div className="d-flex align-items-center gap-2">
             <span className="text-light">
               {user?.full_name} ({user?.role})
             </span>
-            <div className="position-relative">
-              <i className="bi bi-bell" style={{ fontSize: "18px", color: count > 0 ? "red" : "gray"}}
-                title={ count > 0 ? "Notificaciones Pendientes" : "Sin Notificaciones"} onClick={() => setShow(!show)}></i>
 
-              {notificaciones.some(n => !n.leido) && (
-                <span className="badge bg-danger position-absolute top-0 start-100 translate-middle">
-                  {count}
-                </span>
-              )}
+            {puedeVerNotificaciones && (
+              <div className="position-relative">
+                <i
+                  className="bi bi-bell"
+                  style={{
+                    fontSize: "18px",
+                    color: count > 0 ? "red" : "gray",
+                    cursor: "pointer"
+                  }}
+                  title={count > 0 ? "Notificaciones Pendientes" : "Sin Notificaciones"}
+                  onClick={() => setShow(!show)}
+                ></i>
 
-              {/* 🔥 Popup */}
+                {count > 0 && (
+                  <span className="badge bg-danger position-absolute top-0 start-100 translate-middle">
+                    {count}
+                  </span>
+                )}
+
                 {show && (
-                  <div style={{ position: "absolute", right: 0, top: "30px", width: "300px", background: "#fff",
-                      border: "1px solid #ddd", borderRadius: "8px", boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
-                      zIndex: 1000 }} >
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      top: "30px",
+                      width: "300px",
+                      background: "#fff",
+                      border: "1px solid #ddd",
+                      borderRadius: "8px",
+                      boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
+                      zIndex: 1000,
+                      maxHeight: "350px",
+                      overflowY: "auto"
+                    }}
+                  >
                     {notificaciones.length === 0 ? (
                       <div className="p-2 text-center">Sin notificaciones</div>
                     ) : (
-                      notificaciones.map((n) => (
-                        <div key={n.id} onClick={() => {
-                            if (user?.role === "Admin") {
-                              marcarYRedirigir(n);
-                            }
-                          }} style={{ padding: "10px", borderBottom: "1px solid #eee", cursor: "pointer" }} >
-                          <div style={{ fontSize: "12px" }}>{n.contenido}</div>
+                      notificaciones.map(n => (
+                        <div
+                          key={n.id}
+                          onClick={() => abrirNotificacion(n)}
+                          style={{
+                            padding: "10px",
+                            borderBottom: "1px solid #eee",
+                            cursor: "pointer"
+                          }}
+                        >
+                          <div className="fw-semibold" style={{ fontSize: "12px" }}>
+                            {n.titulo}
+                          </div>
+                          <div style={{ fontSize: "12px" }}>
+                            {n.contenido}
+                          </div>
                         </div>
                       ))
                     )}
                   </div>
                 )}
-            </div>
+              </div>
+            )}
+
             <Button variant="outline-light" size="sm" onClick={handleLogout}>
               Cerrar sesión
             </Button>
           </div>
         </Navbar.Collapse>
-
       </Container>
     </Navbar>
   );

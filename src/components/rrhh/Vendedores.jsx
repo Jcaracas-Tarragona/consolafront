@@ -1,5 +1,5 @@
 // components/rrhh/Vendedores.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Alert, Button, Card, Spinner, Form, Row, Col } from "react-bootstrap";
 import UploadExcel from "./UploadExcel";
 import ImportSummary from "./ImportSummary";
@@ -17,6 +17,9 @@ export default function Vendedores({ token }) {
   const [loadingImport, setLoadingImport] = useState(false);
   const [isValidFile, setIsValidFile] = useState(false);
   const [empresa, setEmpresa] = useState("QA");
+  const [notificaciones, setNotificaciones] = useState([]);
+  const [filtroNotificaciones, setFiltroNotificaciones] = useState("false");
+  const [cargandoNotificaciones, setCargandoNotificaciones] = useState(false);
 
   async function generarPreview() {
     if (!file) {
@@ -123,6 +126,52 @@ export default function Vendedores({ token }) {
 
   }
 
+  const cargarNotificaciones = async () => {
+    setCargandoNotificaciones(true);
+    try {
+      const res = await fetch( `${API_BASE_URL}/notificaciones/url?url=vendedores&leido=${filtroNotificaciones}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      const data = await res.json();
+      if (res.ok) {
+        setNotificaciones(data.notificaciones || []);
+      }
+    } catch {
+      setNotificaciones([]);
+    } finally {
+      setCargandoNotificaciones(false);
+    }
+  };
+
+  const marcarLeida = async id => {
+    try {
+    //const res = await fetch(`${API_BASE_URL}/notificaciones/${id}/estado`,{
+      const res = await fetch(`${API_BASE_URL}/notificaciones/leido/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ leido: true })
+        }
+      );
+
+      if (res.ok) {
+        setNotificaciones(prev =>
+          prev.filter(notificacion => notificacion.id !== id)
+        );
+        window.dispatchEvent(new Event("notificacionesActualizadas"));
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    cargarNotificaciones();
+  }, [filtroNotificaciones]);
+
   return (
     <>
       <Card className="shadow-sm">
@@ -133,11 +182,75 @@ export default function Vendedores({ token }) {
           </h5>
         </Card.Header>
         <Card.Body>
-          <Alert variant="info">
-            Seleccione una empresa y archivo Excel.
-            <br />
-            El sistema generará primero una vista previa con
-            todos los cambios que serán realizados.
+          <div className="card shadow-sm">
+            <div className="card-body p-3">
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <h6 className="mb-0">
+                  Modificación de Vendedor en Locales
+                </h6>
+                <select className="form-select form-select-sm w-auto" value={filtroNotificaciones}
+                  onChange={e => setFiltroNotificaciones(e.target.value)} >
+                  <option value="false">Pendientes</option>
+                  <option value="true">Leídas</option>
+                </select>
+              </div>
+
+              <div className="table-responsive">
+                <table className="table table-sm table-hover align-middle mb-0 small" style={{ maxHeight: 200, overflowY: "auto" }}>
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Notificación</th>
+                      <th className="text-center">Estado</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cargandoNotificaciones ? (
+                      <tr>
+                        <td colSpan="4" className="text-center text-muted py-2">
+                          Cargando...
+                        </td>
+                      </tr>
+                    ) : notificaciones.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" className="text-center text-muted py-2">
+                          No hay notificaciones.
+                        </td>
+                      </tr>
+                    ) : (
+                      notificaciones.map(notificacion => (
+                        <tr key={notificacion.id}>
+                          <td className="text-nowrap py-0">
+                            {new Date(notificacion.created_at).toLocaleDateString("es-CL")}
+                          </td>
+                          <td>
+                            <small className="text-muted py-0">
+                              {notificacion.contenido}
+                            </small>
+                          </td>
+                          <td className="text-end py-0">
+                            {!notificacion.leido && (
+                              <button type="button" className="btn btn-sm btn-outline-success text-nowrap py-0"
+                                onClick={() => marcarLeida(notificacion.id)} >
+                                <i className="bi bi-check2 me-1"></i>
+                                Leída
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <hr className="my-3" />
+
+          <Alert variant="info p-2 small">
+            Seleccione una empresa y archivo Excel. El sistema generará una vista previa con
+            los cambios que serán realizados.
           </Alert>
           <Row>
              <Col md={4}>
